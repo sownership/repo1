@@ -3,8 +3,11 @@ package socket.server;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 
@@ -16,7 +19,7 @@ public class Server {
 
 			while (true) {
 				Socket s = ss.accept();
-				start(s);
+				receiveFiles(s);
 			}
 
 		} catch (IOException e) {
@@ -24,11 +27,13 @@ public class Server {
 		}
 	}
 
-	private static void start(Socket clientSocket) {
+	private static void receiveFiles(Socket clientSocket) {
 
 		try (Socket s = clientSocket;
-				BufferedInputStream bis = new BufferedInputStream(s.getInputStream());
-				DataInputStream dis = new DataInputStream(bis)) {
+				InputStream bis = new BufferedInputStream(s.getInputStream());
+				DataInputStream dis = new DataInputStream(bis);
+				OutputStream bos = new BufferedOutputStream(s.getOutputStream());
+				DataOutputStream dos = new DataOutputStream(bos)) {
 
 			// start character
 			while (dis.readByte() != 0x0A)
@@ -45,17 +50,23 @@ public class Server {
 				String fileName = dis.readUTF();
 
 				// file
-				try (FileOutputStream fos = new FileOutputStream(fileName);
-						BufferedOutputStream bos = new BufferedOutputStream(fos)) {
+				try (OutputStream fos = new FileOutputStream("DESTDIR\\" + fileName);
+						BufferedOutputStream fbos = new BufferedOutputStream(fos)) {
 
 					byte[] fileBuf = new byte[1024 * 8];
 					int remain = versionInfoFileLen;
-					while (true) {
-						dis.readFully(fileBuf, 0, Math.min(fileBuf.length, remain));
-						bos.write(fileBuf);
+					while (remain > 0) {
+						int len = Math.min(fileBuf.length, remain);
+						dis.readFully(fileBuf, 0, len);
+						fbos.write(fileBuf, 0, len);
+						remain -= len;
 					}
 				}
 			}
+
+			// bye-bye
+			dos.writeUTF("bye-bye");
+
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

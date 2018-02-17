@@ -11,7 +11,7 @@ import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-public class ServerFor1Folder {
+public class ServerFor1DepthFolder {
 
 	public static void main(String[] args) {
 

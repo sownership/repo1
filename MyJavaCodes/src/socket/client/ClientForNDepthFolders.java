@@ -2,6 +2,7 @@ package socket.client;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -15,11 +16,21 @@ public class ClientForNDepthFolders {
 	public static void main(String[] args) {
 
 		try (Socket s = new Socket("127.0.0.1", 5555);
-				OutputStream bis = new BufferedOutputStream(s.getOutputStream());
-				DataOutputStream dos = new DataOutputStream(bis)) {
+				OutputStream bos = new BufferedOutputStream(s.getOutputStream());
+				DataOutputStream dos = new DataOutputStream(bos);
+				InputStream bis = new BufferedInputStream(s.getInputStream());
+				DataInputStream dis = new DataInputStream(bis)) {
 
 			File dir = new File("SRCTOP");
 			send(dos, dir);
+
+			dos.writeUTF("END");
+			dos.flush();
+
+			while (!"bye-bye".equals(dis.readUTF()))
+				;
+
+			System.out.println("bye-bye");
 
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -36,7 +47,7 @@ public class ClientForNDepthFolders {
 				if (f.isDirectory()) {
 					send(dos, f);
 				} else {
-					transferFile(dos, file);
+					transferFile(dos, f);
 				}
 			}
 		}
@@ -48,7 +59,7 @@ public class ClientForNDepthFolders {
 		dos.writeUTF("DIRECTORY");
 
 		// path
-		dos.writeUTF(file.getParent());
+		dos.writeUTF(file.getParent() == null ? "" : file.getParent());
 
 		// name
 		dos.writeUTF(file.getName());
@@ -60,7 +71,7 @@ public class ClientForNDepthFolders {
 		dos.writeUTF("FILE");
 
 		// path
-		dos.writeUTF(file.getParent());
+		dos.writeUTF(file.getParent() == null ? "" : file.getParent());
 
 		// name
 		dos.writeUTF(file.getName());

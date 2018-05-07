@@ -1,14 +1,14 @@
-package algorithm;
+package algorithm.knapsack;
 
-public class KnapsackUR {
+public class Knapsack01R {
 
-	private static int k = 8;
-	private static int[] w = { 1, 3, 4, 5 };
-	private static int[] v = { 10, 40, 50, 70 };
-
+	private static int k = 50;
+	private static int v[] = { 60, 100, 120 };
+	private static int w[] = { 10, 20, 30 };
+	
 	public static void main(String[] args) {
 
-		System.out.println(r(w.length - 1, k));
+		System.out.println(r(v.length - 1, k));
 	}
 
 	private static int r(int n, int rk) {
@@ -21,7 +21,7 @@ public class KnapsackUR {
 
 		int use = 0;
 		if (rk - w[n] >= 0) {
-			use = r(n, rk - w[n]) + v[n];
+			use = r(n - 1, rk - w[n]) + v[n];
 		}
 
 		return Math.max(notuse, use);

@@ -1,4 +1,4 @@
-package algorithm;
+package algorithm.knapsack;
 
 public class KnapsackBR {
 

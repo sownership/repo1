@@ -1,4 +1,4 @@
-package algorithm;
+package algorithm.programmers;
 
 public class OneTwoFour {
 	public String change124(int n) {

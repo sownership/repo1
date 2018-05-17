@@ -1,4 +1,4 @@
-package algorithm;
+package algorithm.programmers;
 
 public class Caesar {
 	String caesar(String s, int n) {

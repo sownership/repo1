@@ -1,11 +1,11 @@
-package algorithm;
+package algorithm.search;
 
 public class LowerBound {
 
 	public static void main(String[] args) {
 		
 		int[] ia = {1,5,10,15,20};
-		System.out.println(get(ia, 3));
+		System.out.println(get(ia, 20));
 	}
 
 	private static int get(int[] ia, int t) {

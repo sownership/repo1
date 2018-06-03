@@ -1,4 +1,4 @@
-package algorithm;
+package algorithm.search;
 
 import java.util.HashMap;
 import java.util.HashSet;

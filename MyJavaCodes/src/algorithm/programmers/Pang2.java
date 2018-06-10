@@ -1,4 +1,4 @@
-package algorithm.search;
+package algorithm.programmers;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -9,7 +9,8 @@ public class Pang2 {
 
 	public static void main(String[] args) {
 		//int[] in = new int[] { 1, 2, 2, 1, 2, 3, 1, 3, 3, 1 };
-		int[] in = new int[] { 1, 2, 2, 1, 1, 3, 1, 3, 3, 1 , 1, 2, 2, 2, 2, 3, 1, 3, 3, 1 , 1, 2, 2, 1, 2, 3, 1, 3, 3, 1 };
+		//int[] in = new int[] { 1, 2, 2, 1, 1, 3, 1, 3, 3, 1 , 1, 2, 2, 2, 2, 3, 1, 3, 3, 1 , 1, 2, 2, 1, 2, 3, 1, 3, 3, 1 };
+		int[] in = new int[] { 1, 1, 1, 1, 1, 2, 2, 2, 1, 2, 2 };
 		System.out.println(solve(in));
 	}
 

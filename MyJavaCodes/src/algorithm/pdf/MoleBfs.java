@@ -1,9 +1,11 @@
-package algorithm.search;
+package algorithm.pdf;
 
 import java.util.Arrays;
+import java.util.Queue;
 import java.util.Scanner;
+import java.util.concurrent.LinkedBlockingQueue;
 
-public class MoleDfs {
+public class MoleBfs {
 
 	public static void main(String[] args) {
 
@@ -15,14 +17,14 @@ public class MoleDfs {
 	}
 
 	private static void print() {
-		if(cnt<2) {
+		if (cnt < 2) {
 			System.out.println(0);
 			return;
 		}
 		int[] r = new int[cnt - 1];
 		for (int i = 0; i < cells.length; i++) {
 			for (int j = 0; j < cells.length; j++) {
-				if (cells[i][j] != 0) {
+				if (cells[i][j] > 1) {
 					r[cells[i][j] - 2]++;
 				}
 			}
@@ -34,40 +36,64 @@ public class MoleDfs {
 		}
 	}
 
-	private static int cnt = 1;
-
 	private static void solve(int cellLength) {
-		for (int i = 0; i < cellLength; i++) {
-			for (int j = 0; j < cellLength; j++) {
-				if (cells[i][j] == 1) {
-					cnt++;
-					dfs(i, j);
+		for (int i = 0; i < cells.length; i++) {
+			for (int j = 0; j < cells.length; j++) {
+				if (cells[i][j] != 1) {
+					continue;
 				}
+				cnt++;
+				q.offer(new Point(i, j));
+				bfs();
 			}
 		}
 	}
 
-	private static void dfs(int i, int j) {
-		if (i < 0 || i >= cells.length || j < 0 || j >= cells.length) {
-			return;
-		}
-		if (cells[i][j] == 1) {
+	private static void bfs() {
+		Point p;
+		while ((p = q.poll()) != null) {
+			int i = p.r;
+			int j = p.c;
+			if (cells[i][j] != 1) {
+				continue;
+			}
 			cells[i][j] = cnt;
-		} else {
-			return;
+			// left
+			if (isIn(i, j - 1))
+				q.offer(new Point(i, j - 1));
+			// down
+			if (isIn(i + 1, j))
+				q.offer(new Point(i + 1, j));
+			// right
+			if (isIn(i, j + 1))
+				q.offer(new Point(i, j + 1));
+			// up
+			if (isIn(i - 1, j))
+				q.offer(new Point(i - 1, j));
 		}
-		// left
-		dfs(i, j - 1);
-		// down
-		dfs(i + 1, j);
-		// right
-		dfs(i, j + 1);
-		// up
-		dfs(i - 1, j);
+	}
+
+	private static boolean isIn(int i, int j) {
+		if (i < 0 || i >= cells.length || j < 0 || j >= cells.length) {
+			return false;
+		}
+		return true;
+	}
+
+	private static class Point {
+		private int r;
+		private int c;
+
+		Point(int r, int c) {
+			this.r = r;
+			this.c = c;
+		}
 	}
 
 	private static Scanner scanner = new Scanner(System.in);
 	private static int[][] cells;
+	private static int cnt = 1;
+	private static Queue<Point> q = new LinkedBlockingQueue<>();
 
 	private static int input() {
 		int cellLength = Integer.valueOf(scanner.nextLine());

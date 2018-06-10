@@ -1,4 +1,4 @@
-package algorithm.search;
+package algorithm.programmers;
 
 import java.util.Arrays;
 
@@ -30,17 +30,16 @@ public class Pang {
 					maxScore = score;
 					maxProgress = progressTmp;
 				}
-				maxScore = Math.max(maxScore, score);
-				//System.out.println(score + ":" + progressTmp);
 			}
-
 			in = inBak;
 			score = scoreBak;
 		}
 	}
 
 	private static int score;
-	private static int[] in = new int[] { 1, 2, 2, 1, 2, 3, 1, 3, 3, 1 };
+	//private static int[] in = new int[] { 1, 2, 2, 1, 2, 3, 1, 3, 3, 1 };
+	// 1 2 3 1 1 1 1 1 1
+	private static int[] in = new int[] { 1, 1, 1, 1, 1, 2, 2, 2, 1, 2, 2, 1, 1, 1, 1, 1, 2, 2, 2, 1, 2, 2, 1, 1, 1, 1, 1, 2, 2, 2, 1, 2, 2 };
 
 	private static int[] pang(int idx) {
 		int cnt = 1;

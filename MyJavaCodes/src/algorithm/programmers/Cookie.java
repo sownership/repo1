@@ -16,7 +16,7 @@ public class Cookie {
 	}
 
 	private int solution() {
-		int answer = -1;
+		int answer = 0;
 
 		int[] r = new int[cookie.length];
 		int[] l = new int[cookie.length];
@@ -64,7 +64,7 @@ public class Cookie {
 				List<Integer> idxes = diff.get(-add + sub);
 				if (idxes != null) {
 					for (Integer idx : idxes) {
-						if (idx > i && idx < j) {
+						if (idx >= i && idx <= j) {
 							//System.out.println(i + " " + j + " " + add + " " + sub + " " + answer);
 							answer = Math.max(answer, r[idx] - sub);
 						}

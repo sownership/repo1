@@ -3,10 +3,10 @@ package algorithm.programmers;
 import java.util.LinkedList;
 import java.util.List;
 
-public class Pang {
+public class Pang2 {
 
 	public static void main(String[] args) {
-		Pang pang = new Pang();
+		Pang2 pang = new Pang2();
 
 		// int[] in = new int[] { 1, 2, 2, 1, 2, 3, 1, 3, 3, 1 };
 		// int[] in = new int[] { 1, 2, 2, 1, 1, 3, 1, 3, 3, 1 , 1, 2, 2, 2, 2, 3, 1, 3,
@@ -31,29 +31,20 @@ public class Pang {
 			}
 		}
 
-		return recursive(vl, il, null);
+		return recursive(vl, il, new LinkedList<>());
 	}
 
-	private int recursive(List<Integer> vl, List<Integer> il, List<Integer> reusedp) {
+	private int recursive(List<Integer> vl, List<Integer> il, LinkedList<Integer> dp) {
 
-		//System.out.println("vl: " + vl);
-		//System.out.println("il: " + il);
-		//System.out.println("reusedp: " + reusedp);
+		// System.out.println("vl: " + vl);
+		// System.out.println("il: " + il);
+		// System.out.println("reusedp: " + reusedp);
 
-		int[] dp = new int[vl.size()];
-		int startdp = 0;
-		if (reusedp != null && reusedp.size() > 0) {
-			// 재활용할 dp 가 있으면 세팅한다
-			for (int i = 0; i < reusedp.size(); i++) {
-				dp[i] = reusedp.get(i);
-				startdp = i + 1;
-			}
-		} else {
-			dp[0] = il.get(0) * il.get(0);
-			startdp = 1;
+		if (dp.size() == 0) {
+			dp.add(il.get(0) * il.get(0));
 		}
 		// dp 를 구한다
-		for (int i = startdp; i < vl.size(); i++) {
+		for (int i = dp.size(); i < vl.size(); i++) {
 			int before = -1;
 			// 이전 같은 숫자 위치를 찾는다
 			for (int j = i - 2; j >= 0; j--) {
@@ -66,25 +57,23 @@ public class Pang {
 			// 이전 같은 숫자가 있으면 연결할 경우 최대 가치를 구한다
 			if (before >= 0) {
 				// 이전 같은 숫자와 연결했을 경우 재활용할 수 있는 dp 가 있다면 넘겨준다
-				List<Integer> toreusedp = new LinkedList<>();
+				LinkedList<Integer> toreusedp = new LinkedList<>();
 				for (int j = 0; j < before; j++) {
-					toreusedp.add(dp[j]);
+					toreusedp.add(dp.get(j));
 				}
 				// 이전 같은 숫자와 연결했을 경우의 리스트를 만든다
-				LinkedList<Integer> vl2 = new LinkedList<>();
 				LinkedList<Integer> il2 = new LinkedList<>();
-				vl2.addAll(vl.subList(0, before + 1));
 				il2.addAll(il.subList(0, before + 1));
 				il2.set(il2.size() - 1, il2.get(before) + il.get(i));
-				chain = recursive(vl.subList(before + 1, i), il.subList(before + 1, i), null)
-						+ recursive(vl2, il2, toreusedp);
+				chain = recursive(vl.subList(before + 1, i), il.subList(before + 1, i), new LinkedList<>())
+						+ recursive(vl.subList(0, before + 1), il2, toreusedp);
 			}
-			int notchain = il.get(i) * il.get(i) + dp[i - 1];
+			int notchain = il.get(i) * il.get(i) + dp.get(i - 1);
 			// 최대 가치는 현재 숫자를 이전 같은 숫자와 합치는 경우와 안합치는 경우의 최대
-			dp[i] = Math.max(notchain, chain);
+			dp.add(Math.max(notchain, chain));
 		}
-		//System.out.println(Arrays.toString(dp));
+		// System.out.println(Arrays.toString(dp));
 
-		return dp[dp.length - 1];
+		return dp.getLast();
 	}
 }

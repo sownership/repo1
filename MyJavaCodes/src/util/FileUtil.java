@@ -8,7 +8,7 @@ import java.nio.file.StandardCopyOption;
 public class FileUtil {
 
 	public static void main(String[] args) throws IOException {
-		//dirCopy("C:\\ljg\\tmp\\1", "C:\\ljg\\tmp\\2");
+		dirCopy("C:\\ljg\\tmp\\1", "C:\\ljg\\tmp\\2");
 		dirDelete( "C:\\ljg\\tmp\\2\\1");
 	}
 
@@ -20,7 +20,8 @@ public class FileUtil {
 		File[] fs = srcD.listFiles();
 		for (File f : fs) {
 			if (f.isDirectory()) {
-				dirCopy(f.getAbsolutePath(), destD.getCanonicalPath());
+				//getCanonicalPath 는 disk cost 발생한다고 함
+				dirCopy(f.getAbsolutePath(), destD.getAbsolutePath());
 			} else {
 				Files.copy(f.toPath(), new File(destD, f.getName()).toPath(), StandardCopyOption.REPLACE_EXISTING);
 			}
@@ -32,7 +33,7 @@ public class FileUtil {
 		File[] fs = target.listFiles();
 		for (File f : fs) {
 			if (f.isDirectory()) {
-				dirDelete(f.getCanonicalPath());
+				dirDelete(f.getAbsolutePath());
 			} else {
 				f.delete();
 			}

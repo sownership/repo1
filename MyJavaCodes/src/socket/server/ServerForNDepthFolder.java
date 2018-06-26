@@ -7,8 +7,6 @@ import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 
@@ -21,10 +19,10 @@ public class ServerForNDepthFolder {
 			while (true) {
 				try (Socket s = ss.accept()) {
 					acceptTopFolder(s);
-				} catch (IOException e) {
+				} catch (Exception e) {
 					e.printStackTrace();
+					Thread.sleep(1000);
 				}
-				Thread.sleep(1000);
 			}
 
 		} catch (Exception e) {
@@ -34,11 +32,8 @@ public class ServerForNDepthFolder {
 
 	private static void acceptTopFolder(Socket s) throws Exception {
 
-		try (InputStream is = s.getInputStream();
-				BufferedInputStream bis = new BufferedInputStream(is);
-				DataInputStream dis = new DataInputStream(bis);
-				OutputStream bos = new BufferedOutputStream(s.getOutputStream());
-				DataOutputStream dos = new DataOutputStream(bos)) {
+		try (DataInputStream dis = new DataInputStream(new BufferedInputStream(s.getInputStream()));
+				DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(s.getOutputStream()))) {
 
 			String type;
 			while (!"END".equals(type = dis.readUTF())) {

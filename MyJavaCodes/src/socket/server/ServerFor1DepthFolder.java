@@ -6,8 +6,6 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 
@@ -30,10 +28,8 @@ public class ServerFor1DepthFolder {
 	private static void receiveFiles(Socket clientSocket) {
 
 		try (Socket s = clientSocket;
-				InputStream bis = new BufferedInputStream(s.getInputStream());
-				DataInputStream dis = new DataInputStream(bis);
-				OutputStream bos = new BufferedOutputStream(s.getOutputStream());
-				DataOutputStream dos = new DataOutputStream(bos)) {
+				DataInputStream dis = new DataInputStream(new BufferedInputStream(s.getInputStream()));
+				DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(s.getOutputStream()))) {
 
 			// start character
 			while (dis.readByte() != 0x0A)
@@ -50,8 +46,8 @@ public class ServerFor1DepthFolder {
 				String fileName = dis.readUTF();
 
 				// file
-				try (OutputStream fos = new FileOutputStream("DESTDIR\\" + fileName);
-						BufferedOutputStream fbos = new BufferedOutputStream(fos)) {
+				try (BufferedOutputStream fbos = new BufferedOutputStream(
+						new FileOutputStream("DESTDIR\\" + fileName))) {
 
 					byte[] fileBuf = new byte[1024 * 8];
 					int remain = versionInfoFileLen;

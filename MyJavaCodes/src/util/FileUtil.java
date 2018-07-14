@@ -9,7 +9,7 @@ public class FileUtil {
 
 	public static void main(String[] args) throws IOException {
 		dirCopy("C:\\ljg\\tmp\\1", "C:\\ljg\\tmp\\2");
-		dirDelete( "C:\\ljg\\tmp\\2\\1");
+		dirDelete("C:\\ljg\\tmp\\2\\1");
 	}
 
 	private static void dirCopy(String src, String destParent) throws IOException {
@@ -20,7 +20,7 @@ public class FileUtil {
 		File[] fs = srcD.listFiles();
 		for (File f : fs) {
 			if (f.isDirectory()) {
-				//getCanonicalPath 는 disk cost 발생한다고 함
+				// getCanonicalPath 는 disk cost 발생한다고 함
 				dirCopy(f.getAbsolutePath(), destD.getAbsolutePath());
 			} else {
 				Files.copy(f.toPath(), new File(destD, f.getName()).toPath(), StandardCopyOption.REPLACE_EXISTING);
@@ -40,4 +40,11 @@ public class FileUtil {
 		}
 		target.delete();
 	}
+
+	private static void dirMove(String src, String dest) throws IOException {
+		dirCopy("C:\\ljg\\tmp\\1", "C:\\ljg\\tmp\\2");
+		dirDelete("C:\\ljg\\tmp\\2\\1");
+	}
+	
+	
 }

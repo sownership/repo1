@@ -1,4 +1,4 @@
-package socket.server;
+package socket.folderndepthsend;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;

@@ -1,9 +1,16 @@
 package util;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.regex.Pattern;
 
 public class FileUtil {
 
@@ -45,6 +52,21 @@ public class FileUtil {
 		dirCopy("C:\\ljg\\tmp\\1", "C:\\ljg\\tmp\\2");
 		dirDelete("C:\\ljg\\tmp\\2\\1");
 	}
-	
-	
+
+	private static void apply(String oldFile, String newFile, Map<String, String> targets) {
+		try(BufferedReader br = new BufferedReader(new FileReader(oldFile));
+				BufferedWriter bw = new BufferedWriter(new FileWriter(newFile))) {
+			String line;
+			while((line=br.readLine())!=null) {
+				for(Entry<String, String> e : targets.entrySet()) {
+					String key = e.getKey();
+					if(line.contains(key)) {
+						Pattern p = Pattern.compile("^\\s*" + key + "\\s*=.*");
+					}
+				}
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 }

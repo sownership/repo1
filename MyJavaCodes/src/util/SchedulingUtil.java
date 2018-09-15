@@ -26,7 +26,7 @@ public class SchedulingUtil {
 
 		System.out.print("Enter the number of process : ");
 		n = s.nextInt();
-		System.out.print("\n\t Enter burst time : time priorities \n");
+		System.out.print("\n\t Ent3 time priorities \n");
 
 		for (i = 0; i < n; i++) {
 			System.out.print("\nProcess[" + (i + 1) + "]:");

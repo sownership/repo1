@@ -13,18 +13,18 @@ public class Main {
 
 		for (int i = 0; i < 1000; i++) {
 			Packet packet = w.recv(); // read a single packet
-			System.out.println(packet);
+			//System.out.println("recv:" + packet);
 			if (packet.getDstPort() == 8010) {
 				packet.setDstPort(8011);
 				System.out.println(new String(packet.getPayload()));
 				if(packet.getPayload().length>0) {
-					packet.setPayload("zz".getBytes());					
+					packet.setPayload("hahaha".getBytes());					
 				}
 			} else if (packet.getDstPort() == 8012) {
 				packet.setSrcPort(8010);
 			}
+			System.out.println("send:" + packet);
 			w.send(packet); // re-inject the packet into the network stack
-			System.out.println(packet);
 		}
 
 		w.close(); // stop capturing packets

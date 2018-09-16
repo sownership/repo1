@@ -28,6 +28,8 @@ import com.sun.jna.ptr.LongByReference;
 import java.util.Arrays;
 import java.util.List;
 
+import javax.xml.bind.DatatypeConverter;
+
 import static com.github.ffalcinelli.jdivert.Enums.*;
 import static com.github.ffalcinelli.jdivert.exceptions.WinDivertException.throwExceptionOnGetLastError;
 import static com.sun.jna.platform.win32.WinNT.HANDLE;
@@ -277,6 +279,7 @@ public class WinDivert {
         buffer.write(0, raw, 0, raw.length);
         dll.WinDivertSend(handle, buffer, raw.length, packet.getWinDivertAddress().getPointer(), sendLen);
         throwExceptionOnGetLastError();
+        System.out.println("send:" + System.currentTimeMillis() + " " + DatatypeConverter.printHexBinary(raw) + " " + sendLen.getValue());
         return sendLen.getValue();
     }
 

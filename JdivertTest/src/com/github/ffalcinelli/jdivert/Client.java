@@ -21,8 +21,8 @@ public class Client {
 	private static Socket getSocket() throws IOException {
 		Socket s = new Socket();
 		s.setReuseAddress(true);
-		s.bind(new InetSocketAddress("192.168.219.104", 8012));
-		s.connect(new InetSocketAddress("192.168.219.104", 8010));
+		s.bind(new InetSocketAddress("127.0.0.1", 8012));
+		s.connect(new InetSocketAddress("127.0.0.1", 8010));
 		return s;
 	}
 }

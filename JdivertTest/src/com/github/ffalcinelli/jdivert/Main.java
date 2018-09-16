@@ -16,14 +16,13 @@ public class Main {
 			//System.out.println("recv:" + packet);
 			if (packet.getDstPort() == 8010) {
 				packet.setDstPort(8011);
-				System.out.println(new String(packet.getPayload()));
 				if(packet.getPayload().length>0) {
-					packet.setPayload("hahaha".getBytes());					
+					System.out.println(new String(packet.getPayload()));
+					packet.setPayload("hahahah".getBytes());					
 				}
 			} else if (packet.getDstPort() == 8012) {
 				packet.setSrcPort(8010);
 			}
-			System.out.println("send:" + packet);
 			w.send(packet); // re-inject the packet into the network stack
 		}
 

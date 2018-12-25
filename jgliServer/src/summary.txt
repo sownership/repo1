@@ -1,0 +1,19 @@
+- 무조건적인 확장성보다는 변할 것과 변하지 않을 것을 잘 결정하는 것이 중요.
+- 인크립션 뿐 아니라 다른 형태의 요청도 처리할 수 있도록 함
+- systemin, socket 뿐 아니라 새로운 통신방식을 사용하는 client 도 지원할 수 있도록 설계
+- 요청 command 에 따라 동적으로 의존성을 주입할 수 있도록 dependancyinjectionutil 을 사용함
+  구현은 reflection 과 설정파일을 사용함
+- 인크립션은 서로 결합해서 사용할 수 있음 즉, 서브클래싱을 피할 수 있는 구조로 되어 있음.
+- 인크립션 방식이 다르다고 controller 가 추가되지 않도록 설계함.
+  즉 하나의 controller 가 요청 명령에 따라 다양한 인크립터를 사용할 수 있음
+- java nio.2 비동기 통신을 통해 적의수의 thread 로 많은 client 를 처리할 수 있다
+- client 가 응답하지 않는 경우 timeout 처리를 하고 구현은 scheduledExecutorService 를 사용한다.
+- controller 가 사용할 ThreadPool 은 cpu core 수 만큼만 사용한다.
+  file, socket 처리가 모두 비동기이기 때문이다.
+- OOM 방지를 위해 파일은 한번에 8k 만큼만 읽는다.
+	 * read -> encrypt -> write 가 계속된다
+	 * read 는 한번에 8k 이상하는 것은 더 이상의 성능향상이 없다. 오히려 메모리 부담을 줄 수 있다
+	 * read 와 write 가 너무 느리므로 encrypt 8k 를 multithread 로 하는 것은 전체 속도에 의미를 못준다
+	 * 오히려 read 와 write 를 위한 thread 를 잡아두지 않는 것이 최선이다
+	 * 즉 read 와 write 를 비동기로 처리한다
+- 제안: 프로토콜 설계의 보완. 예를들어 인크립션방식 등이 client 로부터 전달.

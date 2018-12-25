@@ -2,7 +2,7 @@ package server.encrypt;
 
 import java.nio.ByteBuffer;
 
-public class LineMergeEncrypt extends Encrypt {
+public class LineMergeEncrypt extends AbsEncrypt {
 	
 	@Override
 	public ByteBuffer encrypt(ByteBuffer data) {

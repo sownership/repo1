@@ -2,7 +2,7 @@ package server.encrypt;
 
 import java.nio.ByteBuffer;
 
-public class CaesarMergeEncrypt extends Encrypt {
+public class CaesarMergeEncrypt extends AbsEncrypt {
 
 	@Override
 	public ByteBuffer encrypt(ByteBuffer data) {

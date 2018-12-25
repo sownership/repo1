@@ -2,7 +2,7 @@ package server.encrypt;
 
 import java.nio.ByteBuffer;
 
-public abstract class Encrypt {
+public abstract class AbsEncrypt {
 
 	private ByteBuffer remain;
 	

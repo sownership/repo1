@@ -8,8 +8,8 @@ import server.util.DependancyInjectionUtil;
 public class FrontController {
 
 	public static void run(AbsClient client, ByteBuffer message) {
-		String msg = new String(message.array());
-		IController controller = DependancyInjectionUtil.get("commandControllerMapper.properties", msg, msg,
+		String cmd = new String(message.array());
+		IController controller = DependancyInjectionUtil.get("commandControllerMapper.properties", cmd, message,
 				IController.class);
 		controller.start(client, message);
 	}

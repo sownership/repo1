@@ -15,7 +15,7 @@ public abstract class AbsEncryptController implements IController {
 		
 		if(encrypters==null) {
 			String command = new String(cmd.array());
-			encrypters = DependancyInjectionUtil.getArray("commandEncrypt.properties", command, command,
+			encrypters = DependancyInjectionUtil.getArray("commandEncrypt.properties", command, data,
 					AbsEncrypt.class);
 		}
 		

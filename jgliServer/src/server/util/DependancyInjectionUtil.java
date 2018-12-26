@@ -1,6 +1,7 @@
 package server.util;
 
 import java.lang.reflect.Constructor;
+import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -9,7 +10,7 @@ public class DependancyInjectionUtil {
 
 	private static Map<String, Map<String, String>> fileKeyTypeMap = Collections.synchronizedMap(new HashMap<>());
 
-	public static <T> T get(String file, String key, String msg, Class<T> c) {
+	public static <T> T get(String file, String key, ByteBuffer msg, Class<T> c) {
 		try {
 			Class cls = Class.forName(fileKeyTypeMap.get(file).get(key));
 			Class partypes[] = new Class[1];
@@ -24,7 +25,7 @@ public class DependancyInjectionUtil {
 		return null;
 	}
 
-	public static <T> T[] getArray(String string, String command, String command2, Class<T> class1) {
+	public static <T> T[] getArray(String string, String command, ByteBuffer msg, Class<T> class1) {
 		// TODO Auto-generated method stub
 		return null;
 	}

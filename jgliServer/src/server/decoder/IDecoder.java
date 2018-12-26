@@ -1,10 +1,10 @@
 package server.decoder;
 
-import java.util.Queue;
+import java.nio.ByteBuffer;
 
 public interface IDecoder {
 
-	public boolean isDecoderable(Queue<Byte> qeueue);
+	public boolean isDecoderable(ByteBuffer packet);
 	
-	public byte[] decode(Queue<Byte> queue);
+	public byte[] decode(ByteBuffer packet);
 }

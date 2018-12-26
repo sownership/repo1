@@ -7,17 +7,17 @@ import server.client.AbsClient;
 
 public class NonStopEncryptWithFileSaveController extends NonStopEncryptController {
 
-	private SeekableByteChannel seekableByteChannel;
+	private SeekableByteChannel writeSeekableByteChannel;
 	
 	@Override
 	public void start(AbsClient client, ByteBuffer req) {
-		seekableByteChannel = getWriteChannel(req);
+		writeSeekableByteChannel = getWriteChannel(req);
 		super.start(client, req);
 	}
 
 	@Override
 	protected void endProcess(AbsClient client, ByteBuffer msg, Runnable run) {
-		seekableByteChannel.write(msg) {
+		writeSeekableByteChannel.write(msg, callback() {
 			run.run();
 		}
 	}

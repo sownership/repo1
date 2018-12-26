@@ -1,5 +1,6 @@
 package server;
 
+import java.nio.ByteBuffer;
 import java.util.Scanner;
 
 import server.client.AbsClient;
@@ -24,7 +25,12 @@ public class SystemIOAcceptor extends AbsIOAccepter {
 			@Override
 			public void run() {
 				while (true) {
-					onMessageReceived(client, scanner.nextLine().getBytes());
+					client.addPacket(scanner.nextLine().getBytes());
+					IDecoder decoder = getDecoder();
+					ByteBuffer receivedData = client.getReceivedData(); //누적해서 받은 데이터
+					while (decoder.isDecoderable(receivedData)) { //한번에 여러 command 들어올 수 있음
+						onMessageReceived(client, decoder.decode(receivedData));
+					}
 				}
 			}
 		});

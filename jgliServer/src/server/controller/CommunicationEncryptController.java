@@ -22,11 +22,8 @@ public class CommunicationEncryptController extends AbsEncryptController {
 		
 		@Override
 		public void onEvent(String topic, Map<String, Object> params) {
-			if(topic.equals("resume")) {
-				next(client, req);
-			} else {
-				eventQ.offer(topic);	
-			}
+			eventQ.offer(topic);
+			next(client, req);
 		}
 	};
 	
@@ -52,6 +49,7 @@ public class CommunicationEncryptController extends AbsEncryptController {
 		
 		long fileCurrent = getcur();
 		if(q=="stop") {
+			terminate(client);
 			return;
 		} else if(q=="num") {
 			fileCurrent = num;
@@ -68,9 +66,7 @@ public class CommunicationEncryptController extends AbsEncryptController {
 					} else {
 						msg = encrypt(req, data);
 					}
-					endProcess(client, msg, new callback() {
-						next(client, req);
-					})
+					endProcess(client, msg, null);
 				}, num);
 			}
 		});

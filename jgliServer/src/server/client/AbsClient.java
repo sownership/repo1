@@ -12,6 +12,10 @@ public abstract class AbsClient {
 		recevedData.flip();
 	}
 
+	public ByteBuffer getReceivedData() {
+		return recevedData;
+	}
+
 	public abstract void send(ByteBuffer message, Runnable run);
 
 	public abstract void close();

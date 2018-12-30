@@ -6,21 +6,35 @@ import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
+import java.nio.channels.CompletionHandler;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 public class AsyncEchoClient {
 
 	private AsynchronousSocketChannel client;
-	private Future<Void> future;
 	private static AsyncEchoClient instance;
 
 	private AsyncEchoClient() {
 		try {
 			client = AsynchronousSocketChannel.open();
 			InetSocketAddress hostAddress = new InetSocketAddress("localhost", 4999);
-			future = client.connect(hostAddress);
-			start();
+			Map<String, Object> actionInfo = new HashMap<>();
+			client.connect(hostAddress, actionInfo, new CompletionHandler<Void, Map<String, Object>>() {
+
+				@Override
+				public void completed(Void result, Map<String, Object> attachment) {
+					// TODO Auto-generated method stub
+					
+				}
+
+				@Override
+				public void failed(Throwable exc, Map<String, Object> attachment) {
+					exc.printStackTrace();
+				}
+			});
 
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -31,14 +45,6 @@ public class AsyncEchoClient {
 		if (instance == null)
 			instance = new AsyncEchoClient();
 		return instance;
-	}
-
-	private void start() {
-		try {
-			future.get();
-		} catch (InterruptedException | ExecutionException e) {
-			e.printStackTrace();
-		}
 	}
 
 	public String sendMessage(String message) {

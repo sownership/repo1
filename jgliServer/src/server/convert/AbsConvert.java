@@ -1,8 +1,8 @@
-package server.encrypt;
+package server.convert;
 
 import java.nio.ByteBuffer;
 
-public abstract class AbsEncrypt {
+public abstract class AbsConvert {
 
 	private ByteBuffer remain;
 	

@@ -1,8 +1,8 @@
-package server.encrypt;
+package server.convert;
 
 import java.nio.ByteBuffer;
 
-public class CaesarMergeEncrypt extends AbsEncrypt {
+public class WordMergeConvert extends AbsConvert {
 
 	@Override
 	public ByteBuffer encrypt(ByteBuffer data) {

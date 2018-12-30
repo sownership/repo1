@@ -16,7 +16,24 @@ import server.decoder.IDecoder;
 public class AsyncSocketAcceptor extends AbsIOAccepter {
 
 	private AsynchronousServerSocketChannel serverChannel;
-	private CompletionHandler<Integer, Map<String, Object>> readCallbak;
+	private CompletionHandler<Integer, Map<String, Object>> readCallbak = new CompletionHandler<Integer, Map<String, Object>>() {
+
+		@Override
+		public void failed(Throwable exc, Map<String, Object> attachment) {
+			exc.printStackTrace();
+		}
+
+		@Override
+		public void completed(Integer clientChannel, Map<String, Object> attachment) {
+			Map<String, Object> actionInfo = attachment;
+			String action = (String) actionInfo.get("action");
+			if ("read".equals(action)) {
+				ByteBuffer buffer = (ByteBuffer) actionInfo.get("buffer");
+				buffer.flip();
+				System.out.println(new String(buffer.array()));
+			}
+		}
+	};
 
 	public AsyncSocketAcceptor(IDecoder decoder) {
 		super(decoder);
@@ -49,7 +66,7 @@ public class AsyncSocketAcceptor extends AbsIOAccepter {
 
 					@Override
 					public void failed(Throwable exc, Object attachment) {
-						// process error
+						exc.printStackTrace();
 					}
 				});
 			}

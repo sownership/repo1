@@ -3,24 +3,24 @@ package server.controller;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousFileChannel;
 
-import server.encrypt.AbsEncrypt;
+import server.convert.AbsConvert;
 import server.util.DependancyInjectionUtil;
 
 public abstract class AbsEncryptController implements IController {
 
 	private AsynchronousFileChannel fileChannel;
-	private AbsEncrypt[] encrypters;
+	private AbsConvert[] encrypters;
 
 	protected ByteBuffer encrypt(ByteBuffer cmd, ByteBuffer data) {
 		
 		if(encrypters==null) {
 			String command = new String(cmd.array());
 			encrypters = DependancyInjectionUtil.getArray("commandEncrypt.properties", command, data,
-					AbsEncrypt.class);
+					AbsConvert.class);
 		}
 		
 		ByteBuffer result = ByteBuffer.wrap(data.array());
-		for (AbsEncrypt encrypter : encrypters) {
+		for (AbsConvert encrypter : encrypters) {
 			result = encrypter.encrypt(result);
 		}
 
@@ -30,7 +30,7 @@ public abstract class AbsEncryptController implements IController {
 	protected ByteBuffer encryptRemain(ByteBuffer cmd, ByteBuffer data) {
 		
 		ByteBuffer result = ByteBuffer.wrap(data.array());
-		for (AbsEncrypt encrypter : encrypters) {
+		for (AbsConvert encrypter : encrypters) {
 			result = encrypter.encryptRemain(result);
 		}
 

@@ -1,8 +1,8 @@
-package server.encrypt;
+package server.convert;
 
 import java.nio.ByteBuffer;
 
-public class LineMergeEncrypt extends AbsEncrypt {
+public class LineMergeConvert extends AbsConvert {
 	
 	@Override
 	public ByteBuffer encrypt(ByteBuffer data) {

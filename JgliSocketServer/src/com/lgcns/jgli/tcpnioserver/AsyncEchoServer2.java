@@ -1,6 +1,5 @@
 package com.lgcns.jgli.tcpnioserver;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
@@ -40,7 +39,7 @@ public class AsyncEchoServer2 {
 
 					@Override
 					public void failed(Throwable exc, Object attachment) {
-						// process error
+						exc.printStackTrace();
 					}
 				});
 				try {
@@ -77,23 +76,12 @@ public class AsyncEchoServer2 {
 
 		@Override
 		public void failed(Throwable exc, Map<String, Object> attachment) {
-
+			exc.printStackTrace();
 		}
 
 	}
 
 	public static void main(String[] args) {
 		new AsyncEchoServer2();
-	}
-
-	public static Process start() throws IOException, InterruptedException {
-		String javaHome = System.getProperty("java.home");
-		String javaBin = javaHome + File.separator + "bin" + File.separator + "java";
-		String classpath = System.getProperty("java.class.path");
-		String className = AsyncEchoServer2.class.getCanonicalName();
-
-		ProcessBuilder builder = new ProcessBuilder(javaBin, "-cp", classpath, className);
-
-		return builder.start();
 	}
 }

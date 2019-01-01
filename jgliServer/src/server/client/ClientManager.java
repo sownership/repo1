@@ -1,23 +1,22 @@
 package server.client;
 
 import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.HashMap;
+import java.util.Map;
 
 public class ClientManager {
 
-	private static Set<AbsClient> clientSet = Collections.synchronizedSet(new HashSet<>());
+	private static Map<String, AbsClient> idClientMap = Collections.synchronizedMap(new HashMap<>());
 
-	public static void add(AbsClient client) {
-		if (clientSet.contains(client)) {
-			// disconnect old connection
-			remove(client);
-		} else {
-			clientSet.add(client);
-		}
+	public static void add(String id, AbsClient client) {
+		idClientMap.put(id, client);
 	}
 
-	public static void remove(AbsClient client) {
-		clientSet.remove(client);
+	public static void remove(String id) {
+		idClientMap.remove(id);
+	}
+
+	public static AbsClient getClient(String id) {
+		return idClientMap.get(id);
 	}
 }

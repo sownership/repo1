@@ -21,4 +21,9 @@ public class AsyncSocketClient extends AbsClient {
 		// TODO Auto-generated method stub
 		
 	}
+
+	@Override
+	public String getId() {
+		return socketChannel.toString();
+	}
 }

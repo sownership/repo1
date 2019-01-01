@@ -15,7 +15,7 @@ public class SystemIOAcceptor extends AbsIOAccepter {
 
 	public SystemIOAcceptor(IDecoder decoder) {
 		super(decoder);
-		ClientManager.add(client);
+		ClientManager.add(client.getId(), client);
 	}
 
 	@Override

@@ -18,4 +18,9 @@ public class SystemInClient extends AbsClient {
 		
 	}
 
+	@Override
+	public String getId() {
+		return "SystemInClient";
+	}
+
 }

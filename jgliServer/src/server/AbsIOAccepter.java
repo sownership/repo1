@@ -20,7 +20,7 @@ public abstract class AbsIOAccepter {
 		FrontController.run(client, ByteBuffer.wrap(message));
 	}
 	
-	protected IDecoder getDecoder() {
+	public IDecoder getDecoder() {
 		return decoder;
 	}
 	

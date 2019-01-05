@@ -85,11 +85,11 @@ public class EchoClient {
 			AtomicInteger messageRead = new AtomicInteger(0);
 
 			long startTime = System.currentTimeMillis();
-			for (int i = 0; i < 50000; i++) {
+			for (int i = 0; i < 5000; i++) {
 				new EchoClient("127.0.0.1", 3575, "echo test", messageWritten, messageRead);
 			}
 
-			while (messageRead.get() != 50000) {
+			while (messageRead.get() != 5000) {
 				Thread.sleep(1000);
 				System.out.println("message write:" + messageWritten);
 				System.out.println("message read:" + messageRead);

@@ -2,7 +2,7 @@ package server;
 
 import server.decoder.LineSeperatorDecoder;
 
-public class Main {
+public class ServerMain {
 
 	public static void main(String[] args) throws InterruptedException {
 		new SystemIOAcceptor(new LineSeperatorDecoder()).start();

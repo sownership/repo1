@@ -18,9 +18,9 @@
   file, socket 처리가 모두 비동기이기 때문이다.
 - 인크립터는 현재까지 읽은 파일에서 확실한 부분만 처리하고 나머지는 보관한다
 - OOM 방지를 위해 파일은 한번에 8k 만큼만 읽는다.
-	 * read -> encrypt -> write 가 계속된다
+	 * read -> Convert -> write 가 계속된다
 	 * read 는 한번에 8k 이상하는 것은 더 이상의 성능향상이 없다. 오히려 메모리 부담을 줄 수 있다
-	 * read 와 write 가 너무 느리므로 encrypt 8k 를 multithread 로 하는 것은 전체 속도에 의미를 못준다
+	 * read 와 write 가 너무 느리므로 Convert 8k 를 multithread 로 하는 것은 전체 속도에 의미를 못준다
 	 * 오히려 read 와 write 를 위한 thread 를 잡아두지 않는 것이 최선이다
 	 * 즉 read 와 write 를 비동기로 처리한다
 - 제안: 프로토콜 설계의 보완. 예를들어 인크립션방식 등이 client 로부터 전달.

@@ -5,13 +5,13 @@ import java.nio.ByteBuffer;
 public class LineMergeConvert extends AbsConvert {
 	
 	@Override
-	public ByteBuffer encrypt(ByteBuffer data) {
+	public ByteBuffer convert(ByteBuffer data) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public ByteBuffer encryptRemain(ByteBuffer data) {
+	public ByteBuffer convertRemain(ByteBuffer data) {
 		// TODO Auto-generated method stub
 		return null;
 	}

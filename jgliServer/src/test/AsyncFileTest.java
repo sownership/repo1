@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
 public class AsyncFileTest {
 
 	public static void main(String[] args) throws Exception {
-		for (int i = 0; i < 5; i++)
+		for (int i = 0; i < 10000; i++)
 			dosync2();
 //		for (int i = 0; i < 1; i++)
 //			es.execute(new Runnable() {
@@ -99,7 +99,7 @@ public class AsyncFileTest {
 		}
 	}
 
-	private static ExecutorService es = Executors.newFixedThreadPool(1);
+	private static ExecutorService es = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
 //	private static ThreadPoolExecutor pool = new ThreadPoolExecutor(5, 5, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>(2500));
 //
 //	private static void doasynch() {

@@ -7,13 +7,13 @@ import java.util.Map;
 import server.client.AbsClient;
 import server.util.WhiteBoard;
 
-public class EncryptNumAgainController implements IController {
+public class ConvertNumAgainController implements IController {
 
 	@Override
-	public void start(AbsClient client, ByteBuffer req) {
+	public void start(AbsClient client, Map<String, Object> msg) {
 		Map<String, Object> v = new HashMap<>();
 		v.put("num", 10);
-		WhiteBoard.notify("encrypt"+client+"/num", v);
+		WhiteBoard.notify("convert"+client+"/num", v);
 	}
 
 }

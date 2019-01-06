@@ -11,8 +11,8 @@ public class ExecutorUtil {
 
 	public static final int CPUS = Runtime.getRuntime().availableProcessors();
 
-	public static ExecutorService executor = new ThreadPoolExecutor(CPUS, CPUS, 10, TimeUnit.SECONDS,
-			new LinkedBlockingQueue<>(1000));
-	
+	public static ExecutorService bizExecutor = new ThreadPoolExecutor(1 + CPUS / 4, 1 + CPUS / 4, 10, TimeUnit.SECONDS,
+			new LinkedBlockingQueue<>(110000));
+
 	public static ScheduledExecutorService scheduledExecutor = new ScheduledThreadPoolExecutor(2);
 }

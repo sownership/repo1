@@ -1,12 +1,12 @@
 package server;
 
-import server.decoder.LineSeperatorDecoder;
+import server.decoder.KeywordBaseDecoder;
 
 public class ServerMain {
 
 	public static void main(String[] args) throws InterruptedException {
-		new SystemIOAcceptor(new LineSeperatorDecoder()).start();
-		
+		new AsyncSocketAcceptor(new KeywordBaseDecoder()).start();
+
 		Thread.currentThread().join();
 	}
 }

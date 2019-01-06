@@ -6,6 +6,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousServerSocketChannel;
 import java.nio.channels.AsynchronousSocketChannel;
 import java.nio.channels.CompletionHandler;
+import java.util.Map;
 
 import server.client.AbsClient;
 import server.client.AsyncSocketClient;
@@ -52,14 +53,15 @@ public class AsyncSocketAcceptor extends AbsIOAccepter {
 		@Override
 		public void completed(Integer result, ReadAttachMent attachment) {
 			AbsClient client = ClientManager.getClient(attachment.sockChannel.toString());
+			attachment.byteBuffer.flip();
 			client.addPacket(attachment.byteBuffer);
 			IDecoder decoder = AsyncSocketAcceptor.this.getDecoder();
 			while (decoder.isDecoderable(client.getReceivedData())) { // 한번에 여러 command 들어올 수 있음
-				byte[] command = decoder.decode(client.getReceivedData());
-				if (command == null) {
+				Map<String, Object> decodedMsg = decoder.decode(client.getReceivedData());
+				if (decodedMsg.get("command") == null) {
 					break;
 				}
-				AsyncSocketAcceptor.this.onMessageReceived(client, command);
+				AsyncSocketAcceptor.this.onMessageReceived(client, decodedMsg);
 			}
 			attachment.byteBuffer.clear();
 			attachment.sockChannel.read(attachment.byteBuffer, attachment, this);

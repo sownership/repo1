@@ -1,6 +1,6 @@
 package server;
 
-import java.nio.ByteBuffer;
+import java.util.Map;
 
 import server.client.AbsClient;
 import server.controller.FrontController;
@@ -16,15 +16,16 @@ public abstract class AbsIOAccepter {
 
 	public abstract void start();
 
-	protected void onMessageReceived(AbsClient client, byte[] message) {
-		FrontController.run(client, ByteBuffer.wrap(message));
+	protected void onMessageReceived(AbsClient client, Map<String, Object> msg) {
+		System.out.println(msg);
+		FrontController.run(client, msg);
 	}
-	
+
 	public IDecoder getDecoder() {
 		return decoder;
 	}
-	
+
 	protected void terminate() {
-		
+
 	}
 }

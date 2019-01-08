@@ -1,10 +1,13 @@
 package server.controller;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.Map;
-import java.util.Queue;
-import java.util.concurrent.LinkedBlockingQueue;
 
 import server.client.AbsClient;
 import server.util.ExecutorUtil;
@@ -13,75 +16,80 @@ import server.util.WhiteBoard.Listener;
 
 public class CommunicationConvertController extends AbsConvertController {
 
-	private SeekableByteChannel seekableByteChannel;
-	private Queue<String> eventQ = new LinkedBlockingQueue<>();
-	private AbsClient client;
-	private ByteBuffer req;
-	
 	private Listener listener = new Listener() {
-		
+
 		@Override
 		public void onEvent(String topic, Map<String, Object> params) {
-			eventQ.offer(topic);
-			next(client, req);
+
+			if (("convert/" + client + "/ACK").equals(topic)) {
+			} else if (topic.startsWith(("convert/" + client + "/NUM"))) {
+				// todo set in.position
+			}
+
+			next();
 		}
 	};
-	
+
+	private AbsClient client;
+	private Map<String, Object> msg;
+	private SeekableByteChannel in;
+	private ByteBuffer bf = ByteBuffer.allocate(1024 * 8);
+
 	@Override
 	public void start(AbsClient client, Map<String, Object> msg) {
-		WhiteBoard.registerListener("convert/"+client+"/*", listener);
-		seekableByteChannel = getChannel(req);
-		
-		next(client, req);
+		this.client = client;
+		this.msg = msg;
+
+		WhiteBoard.registerListener("convert/" + client + "/ACK", listener);
+		WhiteBoard.registerListener("convert/" + client + "/NUM", listener);
+
+		String file = (String) msg.get("message");
+		Path pathIn = Paths.get("", file);
+		try {
+			in = Files.newByteChannel(pathIn, StandardOpenOption.READ);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return;
+		}
+
+		next();
 	}
 
-	/**
-	 * read -> convert -> write 가 계속된다
-	 * read 는 한번에 8k 이상하는 것은 더 이상의 성능향상이 없다
-	 * read 와 write 가 너무 느리므로 convert 8k 를 multithread 로 하는 것은 전체 속도에 의미를 못준다
-	 * 오히려 read 와 write 를 위한 thread 를 잡아두지 않는 것이 최선이다
-	 * 즉 read 와 write 를 비동기로 처리한다
-	 * 
-	 * @param client
-	 * @param req
-	 */
-	private void next(AbsClient client, ByteBuffer req) {
-		
-		long fileCurrent = getcur();
-		if(q=="stop") {
-			terminate(client);
-			return;
-		} else if(q=="num") {
-			fileCurrent = num;
-		}
-		
-		ExecutorUtil.executor.execute(new Runnable() {
-			
+	private void next() {
+
+		ExecutorUtil.bizExecutor.execute(new Runnable() {
+
 			@Override
 			public void run() {
-				read8k(new callback() {
-					ByteBuffer msg = null;
-					if(data==null) {
-						msg = convertRemain(req, data);
+				try {
+					if (in.read(bf) > 0) {
+						ByteBuffer result = convert((String) msg.get("command"), bf);
+						bf.clear();
+						result.flip();
+						client.send(result, null);
 					} else {
-						msg = convert(req, data);
+						ByteBuffer result = convertRemain((String) msg.get("command"), bf);
+						result.flip();
+						client.send(result, null);
+						// System.out.println(System.currentTimeMillis() - startTime);
+						terminate();
 					}
-					endProcess(client, msg, null);
-				}, num);
+				} catch (IOException e) {
+					e.printStackTrace();
+					terminate();
+				}
 			}
 		});
 	}
-	
-	protected void endProcess(AbsClient client, ByteBuffer msg, Runnable run) {
-		client.send(msg, run);
-	}
-	
-	private SeekableByteChannel getChannel(ByteBuffer req) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-	
-	private void terminate(AbsClient client) {
-		WhiteBoard.unregisterListener("convert/"+client+"/*", listener);
+
+	private void terminate() {
+//		try {
+//			in.close();
+//		} catch (IOException e1) {
+//			e1.printStackTrace();
+//		}
+
+		WhiteBoard.unregisterListener("convert/" + client + "/ACK", listener);
+		WhiteBoard.unregisterListener("convert/" + client + "/NUM", listener);
 	}
 }

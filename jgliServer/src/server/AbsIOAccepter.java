@@ -17,7 +17,7 @@ public abstract class AbsIOAccepter {
 	public abstract void start();
 
 	protected void onMessageReceived(AbsClient client, Map<String, Object> msg) {
-		System.out.println(msg);
+		//System.out.println(msg);
 		FrontController.run(client, msg);
 	}
 

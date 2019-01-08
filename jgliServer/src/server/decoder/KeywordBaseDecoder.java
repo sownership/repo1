@@ -44,7 +44,7 @@ public class KeywordBaseDecoder implements IDecoder {
 			}
 		}
 		if (result != null) {
-			buffer.position(pos);
+			buffer.position(buffer.position() + pos);
 			// todo compact 는 효율이 떨어짐. 현재 decoder 자체가 효율이 떨어짐
 			buffer.compact();
 		}

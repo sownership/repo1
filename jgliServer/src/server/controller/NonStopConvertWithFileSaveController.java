@@ -39,9 +39,8 @@ public class NonStopConvertWithFileSaveController extends NonStopConvertControll
 	}
 
 	private void next() {
-		int i = 0;
 		try {
-			if ((i = in.read(bf)) > 0) {
+			if (in.read(bf) > 0) {
 				ByteBuffer result = super.convert((String) msg.get("command"), bf);
 				result.flip();
 				out.write(result);
@@ -54,8 +53,10 @@ public class NonStopConvertWithFileSaveController extends NonStopConvertControll
 					}
 				});
 			} else {
-				out.write(super.convertRemain((String) msg.get("command"), bf));
-				System.out.println(System.currentTimeMillis() - startTime);
+				ByteBuffer result = super.convertRemain((String) msg.get("command"), bf);
+				result.flip();
+				out.write(result);
+				//System.out.println(System.currentTimeMillis() - startTime);
 				terminate();
 			}
 		} catch (IOException e) {

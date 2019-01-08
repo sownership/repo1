@@ -15,15 +15,16 @@ public class WhiteBoard {
 
 	private static Map<String, Set<Listener>> topicListeners = new ConcurrentHashMap<>();
 
-	public static void registerListener(String topic, Listener listener) {
+	public synchronized static void registerListener(String topic, Listener listener) {
 		Set<Listener> listeners = topicListeners.get(topic);
 		if (listeners == null) {
 			listeners = Collections.synchronizedSet(new HashSet<>());
+			topicListeners.put(topic, listeners);
 		}
 		listeners.add(listener);
 	}
 
-	public static void unregisterListener(String topic, Listener listener) {
+	public synchronized static void unregisterListener(String topic, Listener listener) {
 		Set<Listener> listeners = topicListeners.get(topic);
 		if (listeners == null) {
 			return;
@@ -31,7 +32,7 @@ public class WhiteBoard {
 		listeners.remove(listener);
 	}
 
-	public static void notify(String topic, Map<String, Object> params) {
+	public synchronized static void notify(String topic, Map<String, Object> params) {
 		Set<Listener> listeners = topicListeners.get(topic);
 		if (listeners == null) {
 			return;

@@ -17,7 +17,7 @@ public class ClientMain {
 	public static void main(String[] args) throws Exception {
 
 		ClientMain ins = new ClientMain();
-		int clientCnt = 1000;
+		int clientCnt = 10000;
 		for (int i = 0; i < clientCnt; i++) {
 			ins.connect("localhost", 4999);
 		}

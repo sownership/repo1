@@ -15,10 +15,14 @@ public class AsyncSocketClient extends AbsClient {
 	@Override
 	public void send(ByteBuffer message, Runnable run) {
 		// 비동기 처리후 run callback 을 실행해 준다
+		int remain = message.remaining();
 		socketChannel.write(message, run, new CompletionHandler<Integer, Runnable>() {
 
 			@Override
 			public void completed(Integer result, Runnable attachment) {
+				if(remain!=result) {
+					System.out.println(remain + ":" + result);					
+				}
 				if(attachment!=null) {
 					attachment.run();					
 				}

@@ -12,6 +12,7 @@ import server.client.AbsClient;
 import server.client.AsyncSocketClient;
 import server.client.ClientManager;
 import server.decoder.IDecoder;
+import server.util.ExecutorUtil;
 
 public class AsyncSocketAcceptor extends AbsIOAccepter {
 
@@ -24,11 +25,17 @@ public class AsyncSocketAcceptor extends AbsIOAccepter {
 
 		@Override
 		public void completed(AsynchronousSocketChannel sockChannel, AsynchronousServerSocketChannel serverSock) {
-			AbsClient client = new AsyncSocketClient(sockChannel);
-			ClientManager.add(client.getId(), client);
+			ExecutorUtil.bizExecutor.execute(new Runnable() {
+				
+				@Override
+				public void run() {
+					AbsClient client = new AsyncSocketClient(sockChannel);
+					ClientManager.add(client.getId(), client);
 
-			serverSock.accept(serverSock, this);
-			startRead(sockChannel);
+					startRead(sockChannel);
+				}
+			});
+			serverSock.accept(serverSock, this);			
 		}
 	};
 

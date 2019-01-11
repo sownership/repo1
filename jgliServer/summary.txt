@@ -69,6 +69,7 @@ biz threadpool 은 2개로 설정되어 있습니다. thread 가 2개밖에 없지만 모든 biz log
 소켓 송수신과 뒤에 이야기할 파일입출력은 커널 메모리를 직접 사용해서 힙메모리 및 cpu 사용율을 절감할 수 있는
 dma 어로케이션을 사용해야 합니다.
 native code 와 관련된 메모리 사용이 없는 나머지 모듈들은 직접 힙메모리를 쓰는 것이 더 유리하겠습니다.
+
 decoder 를 별도의 모듈로 둔 2가지 이유에 대해 말씀 드리겠습니다.
 많은 클라이언트와 대량 통신을 하다보면 client 가 abc 라는 packet 을 전송해도
 server 는 a 를 받고 잠시 후에 bc 를 받을 수 있습니다.
@@ -78,6 +79,9 @@ decoder 는 ab 를 추출해서 돌려주고 c 는 가지고 있다가 다음 packet 과 연결해서 다
 두번째 이유는 data format 즉 data protocol 이 달라질 수 있기 때문에 확장성 측면에서 decode 모듈이 존재합니다.
 예를 들어 json 기반의 protocol 도 있을 수 있고 xml 기반도 있을 수 있으며 이번 과제처럼 단순 word 기반의
 data protocol 도 있을 수 있습니다. 즉 decoder 도 전략 패턴 형태로 사용되는 것입니다.
+상황에 따라 디코더를 변경할 의도가 있으므로 전략패턴으로 볼 수 있고
+억셉터에서 디코딩 추상층을 분리하려는 의도도 있으므로 브릿지 패턴을 적용했다고 볼 수도 있겠습니다.
+
 accepter 에서 client packet 을 받아서 decoder 로 하여금 완성된 요청을 찾아내게 하고
 그 결과를 controller 모듈로 보내서 biz 로직을 처리하도록 합니다.
 controller 모듈은 전형적인 front controller 패턴을 사용하였습니다.

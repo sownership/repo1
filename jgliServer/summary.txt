@@ -89,18 +89,27 @@ front controller 에서는 요청의 command 에 따라 적절한 처리 controller 로 요청을 
 front controller 와 처리 controller 는 결합도를 낮추기 위해 dependancy inversion principle 이 적용되는데
 이를 위해 외부 파일에 의한 의존성 주입하는 방법으로 설계하였습니다.
 즉 command 에 매핑되는 controller 가 mapper 설정파일에 존재하게 됩니다.
-communicatecontroller 는 client 와 상호작용을 하면서
+또한 이 controller 들은 모두 single instance 로 동작합니다.
+이유는 많은 클라이언트들이 동시에 많은 요청을 할 때마다 controller 를 생성하지 않기 위해서 입니다.
+즉 cpu, memory 사용율을 낮추기 위함이고 이는 was 의 servlet 과 같은 구조라고 생각하시면 되겠습니다.
+계속 관련된 내용을 말씀드리겠지만 이 설계는 회사 노트북에서 10000개의 클라이언트가 동시 요청을 했을 때
+cpu, mem, thread 등에 문제가 발생하지 않도록 계산된 설계입니다.
+또한 이 controller 구조 설계는 향후 이 프로그램이 압축,암호화뿐 아니라 다양한 요청을 처리하도록
+열린 아키텍처입니다.
 
-
-프로그램 플로우가 accept 후 socket read -> file read -> convert -> socket write 가 반복되는 구조인데
-
-
-
-- NTFS 나 linux 의 recommand block size 는 4KB 이고 효율을 위해 8KB 를 사용한다.
+ack 를 처리하는 controller 는 commu controller 가 파일의 다음 내용을 처리하도록 신호를 전달해야 합니다.
+이 프로그램에서는 모듈간 결합도를 낮추기 위해 전체적으로 eventbus pattern 즉 pub/sub 를 사용합니다.
+commu controller 는 파일 8k 를 읽은 후 sub 후 client 로 전송하고 client 는 ack 를 보내면
+ack controller 는 pub 를 하게되고 commu controller 가 다음 처리를 하게 됩니다.
+이때 8kb 에 대해서도 이야기를 해 보겠습니다.
+NTFS 나 linux 의 recommand block size 는 4KB 이고 효율을 위해 보통 8KB 를 사용한다.
 8KB 이하는 8KB 보다 성능이 떨어지고 8KB 이상은 메모리 소비 대비 효율이 높지 않습니다.
 그리고 동시 10만 클라이언트를 지원하기 위해 8KB 로 설계를 진행하였습니다.
-- AsynchronousFileChannel 로 비동기 io 를 하고 싶으나
+AsynchronousFileChannel 로 비동기 io 를 하고 싶으나
 jdk 의 windows 구현체의 경우는 file마다 thread 를 생성하는 문제가 있어서
 seekablefilechannel 과 executorservice 를 이용해서 모든 요청이 공평하게 파일 처리가 되도록 한다.
 이 때 file r/w 와 converter 에는 cpu core 의 1/4~1/2만 할당하여 시스템 전체 성능을 유지해 준다.
+
+프로그램 플로우가 accept 후 socket read -> file read -> convert -> socket write 가 반복되는 구조인데
+
 

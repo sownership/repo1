@@ -1,126 +1,141 @@
-본 제품이 시장 경쟁력이 있으려면 성능이 좋고 유연해야 합니다.
-그래서 이 두가지 관점에서 설계를 진행하였습니다.
-성능이란 동시에 많은 클라언트를 서비스할 수 있고 동시에 많은 처리를 할 수 있는 것으로 정의하였습니다.
-유연함이란 변경될 가능성이 있는 항목들에 대해 확장에 열려있고 변경에 닫혀있는 것으로 정의하였습니다.
-모든 내용을 유연하게 만들려고 하면 복잡성이 높아지므로
-여기서는 통신방법, 데이터포맷, 명령어셋, 압축/암호화 방법으로 정하였습니다.
-다시 성능으로 돌아가 많은 클라이언트란 얼마일까요?
-이 설계는 1만개 클라이언트로 정하였습니다. c10k problem 이라는 말이 있듯이
-단일 노드가 10000개 클라이언트를 동시에 서비스할 수 있다면 경쟁력이 있다고 생각하였습니다.
+시장 경쟁력이 있으려면 성능이 좋고 유연해야 합니다.
+그래서 성능과 유연성 2가지 관점에서 설계를 진행하였습니다.
+성능이란 동시에 많은 클라언트를 대상으로 많은 처리를 할 수 있는 것으로 정의하겠습니다.
+유연함이란 변경될 가능성이 있는 항목들에 대해 확장에 열려있고 변경에 닫혀있는 구조로 정의하였습니다.
+
+그럼 많은 클라이언트란 얼마일까요?
+이 설계는 1만개 클라이언트로 정하였습니다. c10k problem 이라는 말도 있듯이
+단일 노드가 10000개 클라이언트를 동시에 서비스할 수 있다면 경쟁력이 있다고 생각할 수 있습니다.
 초당 얼마나 많은 요청을 처리할 수 있으면 많다고 말할 수 있을까요?
 저는 10k 클라이언트에서 10k 요청 처리라고 정의하였습니다.
-설계 후 일부 기능을 실제 구현을 해서 회사 노트북으로 성능 테스트를 해 보았는데요.
-10만개 클라이언트에 서비스를 할 수 있었고 초당 10k 클라이언트에서 10k 의 통신이 이루어집니다.
-10만개 클라이언트일 경우 파일도 동시에 10만개 오픈하여 압축 및 암호화를 처리하는 것을 확인하였습니다.
-회사 노트북에서 apache server 가 ?? 성능이 나오는데 단순비교는 맞지 않지만 이 정도면 의미있는 성능이라고
-볼 수 있겠습니다.
+설계대로 실제 구현을 해서 회사 노트북으로 성능 테스트를 해 보았는데요.
+10만개 클라이언트에 동시 서비스가 정상적으로 진행되었고
+1만개 클라이언트에 1만 tps 로 통신이 이루어졌습니다.
+회사 노트북에서 apache server keep-alive 모드로 1000tps 성능이 나오는 것을 보면 의미있는 성능으로 보여집니다.
 
-서론이 길었는데요. 이제 유연성을 먼저 살펴보고 성능에 대해 말씀드리겠습니다.
+유연성을 먼저 살펴보고 성능에 대해 말씀드리겠습니다.
 유연성 있는 설계에서 가장 중요한 부분은 변할 가능성이 있는 부분과 없는 부분을 명확하게 결정하는 것입니다.
-앞서 말씀드렸듯이 유연성의 포인트를 통신방식, 데이터포맷, 명령어셋 그리고 압축/암호화의 4개로 잡았습니다.
-갑자기 udp 로 통신하는 클라이언트가 추가된다면 acceptor 모듈에서 udp accepter 클래스와
+이 설계에서는 유연성의 포인트를 통신방식, 데이터포맷, 명령어셋 그리고 변환의 4개로 결정하였습니다.
+통신방식을 예로 들어 보면
+udp 통신이 추가로 요구된다면 acceptor 모듈에서 udp accepter 클래스와
 udp client 클래스만 추가하면 되고 나머지 모듈들은 변경이 없습니다.
-즉 다양한 통신방식을 사용하는 클라이언트들을 시스템에서 동일하게 취급할 수 있도록 설계되었습니다.
+다시 데이터 포맷을 예로 들어보면
 json 데이터 포맷으로 통신이 필요하다면 decoder 모듈에서 json decoder 만 추가해 주면 됩니다.
-명령어셋 및 압축/암호화 모듈도 같은 설명이 적용됩니다.
-즉 유연성을 확보하기 위해 open-closed 원칙이 적용된 것입니다.
+명령어셋 및 변환 모듈도 같은 설명이 적용됩니다.
+즉 유연성을 확보하기 위해 시스템 전반적으로 open-closed 원칙이 적용된 것입니다.
 
 accepter 모듈은 systemioaccepter 와 niosocketaccepter 가 있고 이들은 absioacceptor 로 동일하게 취급됩니다.
-client 는 연결 즉 session 입니다. web server 의 session 이라고 생각하시면 되겠습니다.
-지속적으로 들어오는 byte array 에서 의미있는 요청 단위로 뽑아내는 것이 decoder 인데요.
+설명을 위해 용어를 붙이자면 factory method pattern 을 적용하였다고 볼 수 있습니다.
+client 는 연결 즉 session 의 의미입니다. web server 의 session 이라고 생각하시면 되겠습니다.
+
+지속적으로 들어오는 byte array 에서 의미있는 요청 단위를 분리해 내는 모듈이 decoder 인데요.
 이 의미있는 단위 요청은 web server 에서 httprequest 개념으로 생각하시면 되겠습니다.
-decoder 를 별도의 모듈로 둔 2가지 이유에 대해 말씀 드리겠습니다.
-많은 클라이언트와 대량 통신을 하다보면 client 가 abc 라는 packet 을 전송해도
-server 는 a 를 받고 잠시 후에 bc 를 받는 일이 종종 있습니다.
+많은 클라이언트와 대량 통신을 하다보면 client 가 abc 라는 byte array를 한번에 전송해도
+server 는 a 를 받고 잠시 후에 bc 를 받는 경우가 발생할 수 있습니다.
 이렇게 연속으로 들어오는 byte들의 어디부터 어디까지가 의미있는 하나의 요청인지 디코딩을 해야 합니다.
 만약 abc 중 ab 가 완결된 요청이고 c 는 다음 요청의 일부라면
 decoder 는 ab 를 추출해서 돌려주고 c 는 가지고 있다가 다음 packet 과 연결해서 다시 decoding 을 하게 되는 것입니다.
-두번째 이유는 data format 즉 data protocol 이 달라질 수 있기 때문에 확장성 측면에서 decode 모듈이 존재합니다.
-예를 들어 json 기반의 protocol 도 있을 수 있고 xml 기반도 있을 수 있으며 이번 과제처럼 단순 word 기반의
-data protocol 도 있을 수 있습니다. 즉 decoder 도 전략 패턴 형태로 사용되는 것입니다.
-상황에 따라 디코더를 변경할 의도가 있으므로 전략패턴으로 볼 수 있고
-억셉터에서 디코딩 추상층을 분리하려는 의도도 있으므로 브릿지 패턴을 적용했다고 볼 수도 있겠습니다.
+server 는 경우에 따라 json 요청을 처리해야 할 수도 있고 xml 요청을 처리해야 할 수도 있으며
+이번 과제처럼 keyword 베이스의 요청을 처리해야 할 수도 있습니다.
+즉 상황에 따라 decoding algorithm 이 변할 수 있기 때문에 전략 패턴 형태로 설계되었습니다.
+그리고 acceptor 에서 decoding 이라는 추상층을 분리하려는 의도도 있으므로 브릿지 패턴의 설계라고 설명할 수도 있습니다.
 실제 업무에서는 디코더뿐 아니라 인코더도 두고 메시지 오브젝트도 설계합니다.
-지금은 지면상 그리고 시간상 생략하였습니다.
+인코더는 json 기반 client 라면 response 를 json 형태로 만들어주는 모듈이라고 생각하시면 되고요.
+메시지 오브젝트는 client 의 data format 과 관계없이 이 프로그램 내부에서 사용되는 format 이라고 생각하시면 되겠습니다.
 
-accepter 에서 client packet 을 받아서 decoder 로 하여금 완성된 요청을 찾아내게 하고
+accepter 에서 client packet 을 받으면 decoder 로 하여금 완성된 요청을 분리하게 하고
 그 결과를 controller 모듈로 보내서 biz 로직을 처리하도록 합니다.
-controller 모듈은 전형적인 front controller 패턴을 사용하였습니다.
-front controller 에서는 요청의 command 에 따라 적절한 처리 controller 로 요청을 전달하게 됩니다.
-front controller 와 처리 controller 는 결합도를 낮추기 위해 dependancy inversion principle 이 적용되는데
-이를 위해 외부 파일에 의한 의존성 주입하는 방법으로 설계하였습니다.
-구현은 외부 mapper 파일과 reflection 기술을 사용하였습니다
+controller 모듈은 front controller 패턴을 사용하였습니다.
+이곳에서 보안같은 공통 정책을 적용할 수 있습니다.
+front controller 에서는 요청의 command 에 따라 적절한 처리 controller 로 처리를 위임합니다.
+front controller 와 처리 controller들은 서로간의 의존성을 없애기 위해
+dependancy inversion principle 과 외부 파일 설정으로 의존성을 주입하는 dependency injection 기술을 사용하였습니다.
+di 구현은 외부 mapper 파일과 reflection 기술을 사용하였습니다
 즉 command 에 매핑되는 controller 가 mapper 설정파일에 존재하게 됩니다.
-controller 구조 설계는 향후 이 프로그램이 압축,암호화뿐 아니라 다양한 요청을 처리하도록
-열린 아키텍처입니다.
+controller 구조 설계는 향후 이 프로그램이 압축,암호화뿐 아니라 다양한 요청을 처리할 수 있는
+열린 설계입니다.
 
-ack 를 처리하는 controller 는 commu controller 가 파일의 다음 내용을 처리하도록 신호를 전달해야 합니다.
+ack 를 처리하는 convertnextcontroller 는 communicationconvertcontroller 가 
+파일의 다음 내용을 처리하도록 신호를 전달해야 합니다.
 이 프로그램에서는 모듈간 결합도를 낮추기 위해 전체적으로 eventbus pattern 즉 pub/sub 를 사용합니다.
-commu controller 는 파일 8k 를 읽은 후 sub 후 client 로 전송하고 client 는 ack 를 보내면
-ack controller 는 pub 를 하게되고 commu controller 가 다음 처리를 하게 됩니다.
-eventbus 구현은 whiteboard pattern 으로 하여 publisher 와 subscriber 사에에 데이터
+communicationconvertcontroller 는 파일 8k 를 변환 후 sub 후 client 로 전송하고 thread 를 종료합니다.
+client 가 ack 를 보내오면 convertnextcontroller 는 pub 를 하게되고
+communicationconvertcontroller 가 다음 처리를 하게 됩니다.
+eventbus 구현은 whiteboard pattern 으로 하여 event source 와 event listener 간에 데이터
 결합만 존재하도록 하였습니다.
 
-마지막으로 컨버터에 대해 말씀드리겠습니다.
-컨버터는 암축 및 암호화를 담당하는 모듈입니다.
-controller 와 마찬가지로 command 에 따라 다른 converter 들을 사용할 수 있도록 전략패턴이고
-mapper 설정파일로 di 가 적용되어 있습니다.
-또한 여러 압축과 암호화를 한번에 적용할 수 있도록 decorator like 패턴으로 설계되었습니다.
-decorator like pattern 이라고 표현한 것은 decorator pattern concept 으로 설계되었으나
-uml class diagram 에서 보시는 것처럼 decorator pattern 은 아니기 때문입니다.
-실제로 압호화나 압축 순서는 가변적일 수 있기 때문에 concrete component 를 지정하는 것이
-애매해져서 concept 만 빌려오는 것으로 설계했기 때문에 like 라고 적어두었습니다.
+컨버터는 압축 및 암호화를 담당하는 모듈입니다.
+controller 와 마찬가지로 client 요청 command 에 따라 그에 맞는 converter 들을 사용할 수 있도록
+전략패턴으로 설계되었고 mapper 설정파일로 dpendency injection 이 적용되어 있습니다.
+여러 압축과 암호화를 한번에 적용할 수 있도록 decorator like 패턴으로 설계되었습니다.
+decorator pattern 은 decorator 가 아닌 기본 componant 가 하나 있어야 하는데
+설계는 암호화나 압축 순서를 모든 경우의 수로 조합할 수 있는 즉
+모든 클래스가 decorator 가 되야 하므로 like 라는 워드를 추가하였습니다.
 
-이때 총 사용된 thread 수는 8 개입니다.
-즉 모든 i/o 및 biz logic 을 비동기로 작성한 것입니다.
-잘 아시다시피 이는 적합한 기술과 알고리즘을 적용하는 것 뿐 아니라 많은 경험이 필요한 부분입니다.
-예를 들어 물밀듯이 밀려들어오는 connect 요청들을 어떻게 최대한 refuse 하지 않고 받아낼 것인지
-송수신, 압축, 파일처리의 cpu 비중을 어떻게 할 것인지, 10만 클라이언트에 대해 OOM 이 발생하지 않는
-상태로 어떻게 최선의 퍼포먼스를 낼지 등등에 대한 것들일 것입니다.
-계속해서 적용한 기술에 대해 간단하게 살펴보겠습니다.
-java nio.2 의 비동기 통신을 지원하는 class 들을 사용하였습니다.
-대표적으로 asynchronousserversocketchannel 인데 이 accept, socket r/w 로 3개의 기능을 수행합니다.
+이제 흐름 및 기술 이야기를 해 보겠습니다.
+main 에서 설정 파일을 읽어서 decoder 를 매개변수로 acceptor server 를 실행합니다.
+client 로부터 요청이 들어오면 acceptor 는 byte array 를 decoder 로 전달하고
+decoder 는 완결된 요청을 뽑아서 돌려줍니다.
+acceptor 는 frontcontroller 로 요청을 전달합니다.
+frontcontroller 는 요청에 맞는 communicationconvertcontroller 가 처리를 하도록 합니다.
+communicationconvertcontroller 는 파일에서 8k 데이터를 읽은 후 요청에 맞는 converter 들에서 변환을 하도록 합니다.
+controller 는 변환된 내용을 client 에게 전송합니다.
+client 는 ack 를 보내면 같은 흐름으로 convertnextcontroller 가 실행됩니다.
+convertnextcontroller 는 eventbus 를 통해 ack 를 전달하고
+communicationconvertcontroller 는 이 이벤트를 받아서 다음 파일 8k 를 읽고 
+converting 을 한 결과를 client 에 전달합니다.
+
+기술 이야기를 시작하겠습니다.
+밀려들어오는 connect 요청들을 어떻게 refuse 하지 않고 받아내는지
+송수신, 변환, 파일처리의 cpu 비중을 어떻게 할지
+1GB 메모리로 어떻게 10만 요청을 정상적으로 처리할지 등등에 대한 것들을 고려하여 기술을 선정하였습니다.
+10만 클라이언트를 서비스하기 위해 사용된 전체 thread 수는 8 개입니다.
+즉 모든 i/o 및 biz logic 을 비동기로 작성하였습니다.
+우선 multicore 병렬처리에 비약적인 발전이 된 java8 이상을 사용합니다.
+그리고 java nio.2 의 비동기 통신을 지원하는 class 들을 사용합니다.
+대표적으로 asynchronousserversocketchannel 인데 socket accept, r/w 기능을 수행합니다.
 client 입장에서 accept 를 빨리 처리 안해주면 exception 이 발생하므로 이 기능에 전체 쓰레드 8개 중 4개를
 할당하였습니다.
-또한 같은 이유로 accept 후 해야 할 일들은 이 4개가 아닌 biz threadpool 로 위임하였습니다.
-biz threadpool 은 2개로 설정되어 있습니다. thread 가 2개밖에 없지만 모든 biz logic 도 비동기로
-설계되어 초당 수천에서 수만개의 처리가 되는 것을 구현을 통해 확인하였습니다.
+또한 같은 이유로 accept 후 해야 할 일들은 이 4개가 아닌 biz threadpool 로 위임하고
+socket 파라미터는 backlog size 100으로 변경하였습니다.
+biz threadpool 은 2개로 설정되어 있습니다. 2개로도 초당 수만개의 처리가 됩니다.
+
 ByteBuffer 는 byte array 를 편하게 핸들링할 수 있어서 생산성이 향상될 뿐 아니라
-dma 를 적용해서 cpu, memory 를 절감할 수 있습니다.
+kenel memory 를 사용할 수 있는 direct memory access 기술을 사용할 수 있어서
+cpu, memory 사용율을 절감할 수 있습니다.
 소켓 송수신과 뒤에 이야기할 파일입출력은 이 dma 를 통해 커널 메모리를 직접 사용하여
-힙메모리로의 복사가 필요없기 때문에 이 프로그램에서는
+힙메모리로의 복사가 생략되기 때문에 이 모듈에 대해
 cpu 20% memory 50% 절감 효과를 볼 수 있습니다.
-native code 와 관련된 메모리 사용이 없는 나머지 모듈들은 직접 힙메모리를 쓰는 것이 더 유리하겠습니다.
+native code 와 관련되지 않은 나머지 모듈들은 직접 힙메모리를 쓰는 것이 더 성능이 좋습니다.
 아! 10만 클라이언트에 10만 파일을 처리하기 위한 bytebuffer 메모리는
 생성 및 소멸에 높은 cost 가 발생하므로
-bytebuffer pool 을 만들어서 사용해야 cpu 사용율을 대폭 절감할 수 있겠습니다.
-이는 db connection pool 을 사용하는 것보다 중요하다고 말할 수 있습니다.
+bytebuffer pool 형태로 사용해야 cpu 사용율을 대폭 절감할 수 있겠습니다.
+그리고 10만 client 에 8kb 이면 800메가이지만 pool 을 사용하고 동시접속자가 1만이라면
+80메가 메모리만 사용하면 되기 때문입니다.
 
 controller 들은 모두 single instance 로 동작합니다.
 이유는 많은 클라이언트들이 동시에 많은 요청을 할 때마다 controller 를 생성하지 않기 위해서 입니다.
-즉 cpu, memory 사용율을 낮추기 위함이고 이는 was 의 servlet 과 같은 구조라고 생각하시면 되겠습니다.
-계속 관련된 내용을 말씀드리겠지만 이 설계는 회사 노트북에서 10000개의 클라이언트가 동시 요청을 했을 때
-cpu, mem, thread 등에 문제가 발생하지 않도록 계산된 설계입니다.
+즉 cpu, memory 사용율을 낮추기 위함이고 이는 was 의 servlet 과 유사한 구조라고 생각하시면 되겠습니다.
 
-이때 8kb 에 대해서도 이야기를 해 보겠습니다.
+이제 8kb 에 대해서도 이야기를 해 보겠습니다.
 NTFS 나 linux 의 recommand block size 는 4KB 이고 효율을 위해 보통 8KB 를 사용한다.
 8KB 이하는 8KB 보다 성능이 떨어지고 8KB 이상은 메모리 소비 대비 효율이 높지 않습니다.
 그리고 동시 10만 클라이언트를 지원하기 위해 8KB 로 설계를 진행하였습니다.
 AsynchronousFileChannel 로 비동기 io 를 하고 싶으나
-jdk 의 windows 구현체의 경우는 file마다 thread 를 생성하는 문제가 있어서
-seekablefilechannel 과 executorservice 를 이용해서 모든 요청이 공평하게 파일 처리가 되도록 한다.
-이 때 file r/w 와 converter 에는 cpu core 의 1/4~1/2만 할당하여 시스템 전체 성능을 유지해 준다.
+jdk 의 windows 구현체의 경우는 부하가 걸릴때마다 thread 를 생성하는 문제가 있어서
+seekablefilechannel 을 사용하였습니다.
+linux 라면 AsynchronousFileChannel 로 동작하도록 설계합니다.
 
-프로그램 플로우가 client connect 후 socket read -> file read -> convert -> socket write 가 반복되는 구조인데
-client 와의 통신 및 file read 는 os kernel 성능에 의존적이고
+통신 및 file read 는 os kernel 성능에 의존적이고
 client 수가 늘어날수록 단위시간당 통신 속도는 떨어지게 됩니다.
 반면에 convert 는 개발자의 능력에 의존적이라고 볼 수 있습니다.
 convert 튜닝 정도에 따라 프로그램의 수행속도는 몇배가 차이가 나게 됩니다.
-결국 file 을 읽은 후 처리를 할 때 모든 byte 에 대해 convert 에서 사용하는 모든 자료구조는
-log(1) 을 지향해야 합니다.
-제가 실제 구현한 코드도 튜닝을 거쳐 log(1) 로 작성되었습니다.
+그래서 convert 에서 사용하는 모든 자료구조는
+복잡도 O(1) 을 지향해야 합니다.
 
-인크립터는 현재까지 읽은 파일에서 확실한 부분만 처리하고 나머지는 보관한다
+converter는 현재까지 읽은 파일에서 확실한 부분만 처리하고 나머지는 보관합니다.
+예를들어 이번에 읽은 내용이 aaa 로 끝나면 3a 를 client 로 전송하지 않고 보관했다가
+다음번에 읽은 내용이 a 로 시작하면 이전것과 merge 하고 아니면 3a 를 확정하는 것입니다.
 
 프로토콜 프레임 설계는 매우 중요합니다. 이유를 설명 드리겠습니다.
 프로토콜은 시작문자가 있어야 합니다. 유실이 덜되는 tcp 의 경우라도 결국 유실은 발생하기 때문입니다.
@@ -129,5 +144,6 @@ flow control 을 위해 통신번호도 꼭 있어야 합니다.
 그래야만 서로 누락된 번호를 재요청할 수 있고 이 응답이 어떤 요청의 응답인지 알 수 있습니다.
 checksum 또한 중요합니다. tcp 도 결국 유실이 될 수 있기 때문입니다.
 
-
+이상으로 성능과 유연성을 고려한 설계 및 구현 결과를 공유드렸습니다.
+감사합니다.
 

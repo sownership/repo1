@@ -3,15 +3,16 @@
 성능이란 동시에 많은 클라언트를 대상으로 많은 처리를 할 수 있는 것으로 정의하겠습니다.
 유연함이란 변경될 가능성이 있는 항목들에 대해 확장에 열려있고 변경에 닫혀있는 구조로 정의하였습니다.
 
-그럼 많은 클라이언트란 얼마일까요?
-이 설계는 1만개 클라이언트로 정하였습니다. c10k problem 이라는 말도 있듯이
+그럼 많은 클라이언트란 어느 정도일까요?
+c10k problem 이라는 말도 있듯이
 단일 노드가 10000개 클라이언트를 동시에 서비스할 수 있다면 경쟁력이 있다고 생각할 수 있습니다.
 초당 얼마나 많은 요청을 처리할 수 있으면 많다고 말할 수 있을까요?
-저는 10k 클라이언트에서 10k 요청 처리라고 정의하였습니다.
+각종 라이브러리들을 보았을 때 10k 클라이언트에서 10k 요청 처리면 고성능이라고 생각했습니다.
+그래서 10k 클라이언트에 10k 요청 처리를 목표로 설계를 진행하였습니다.
 설계대로 실제 구현을 해서 회사 노트북으로 성능 테스트를 해 보았는데요.
-10만개 클라이언트에 동시 서비스가 정상적으로 진행되었고
+동시 접속 10만 클라이언트에 정상적으로 서비스가 되었고
 1만개 클라이언트에 1만 tps 로 통신이 이루어졌습니다.
-회사 노트북에서 apache server keep-alive 모드로 1000tps 성능이 나오는 것을 보면 의미있는 성능으로 보여집니다.
+회사 노트북에서 apache server keep-alive 모드로 1000tps 성능이 나오는 것을 보면 의미있는 수치로 보여집니다.
 
 유연성을 먼저 살펴보고 성능에 대해 말씀드리겠습니다.
 유연성 있는 설계에서 가장 중요한 부분은 변할 가능성이 있는 부분과 없는 부분을 명확하게 결정하는 것입니다.
@@ -24,24 +25,25 @@ json 데이터 포맷으로 통신이 필요하다면 decoder 모듈에서 json decoder 만 추가해 �
 명령어셋 및 변환 모듈도 같은 설명이 적용됩니다.
 즉 유연성을 확보하기 위해 시스템 전반적으로 open-closed 원칙이 적용된 것입니다.
 
-accepter 모듈은 systemioaccepter 와 niosocketaccepter 가 있고 이들은 absioacceptor 로 동일하게 취급됩니다.
-설명을 위해 용어를 붙이자면 factory method pattern 을 적용하였다고 볼 수 있습니다.
+accepter 즉 서버모듈은 systemioaccepter 와 niosocketaccepter 가 있고 이들은 absioacceptor 로 동일하게 취급됩니다.
+설명을 위해 용어를 사용한다면 factory method pattern 을 적용하였다고 볼 수 있습니다.
 client 는 연결 즉 session 의 의미입니다. web server 의 session 이라고 생각하시면 되겠습니다.
 
 지속적으로 들어오는 byte array 에서 의미있는 요청 단위를 분리해 내는 모듈이 decoder 인데요.
 이 의미있는 단위 요청은 web server 에서 httprequest 개념으로 생각하시면 되겠습니다.
 많은 클라이언트와 대량 통신을 하다보면 client 가 abc 라는 byte array를 한번에 전송해도
 server 는 a 를 받고 잠시 후에 bc 를 받는 경우가 발생할 수 있습니다.
-이렇게 연속으로 들어오는 byte들의 어디부터 어디까지가 의미있는 하나의 요청인지 디코딩을 해야 합니다.
+이렇게 연속으로 들어오는 byte들의 어디부터 어디까지가 의미있는 하나의 요청인지 디코딩을 해서 분리해야 합니다.
 만약 abc 중 ab 가 완결된 요청이고 c 는 다음 요청의 일부라면
-decoder 는 ab 를 추출해서 돌려주고 c 는 가지고 있다가 다음 packet 과 연결해서 다시 decoding 을 하게 되는 것입니다.
+decoder 는 ab 를 분리해서 돌려주고 c 는 가지고 있다가 다음 packet 과 연결해서 다시 decoding 을 하게 되는 것입니다.
 server 는 경우에 따라 json 요청을 처리해야 할 수도 있고 xml 요청을 처리해야 할 수도 있으며
 이번 과제처럼 keyword 베이스의 요청을 처리해야 할 수도 있습니다.
 즉 상황에 따라 decoding algorithm 이 변할 수 있기 때문에 전략 패턴 형태로 설계되었습니다.
 그리고 acceptor 에서 decoding 이라는 추상층을 분리하려는 의도도 있으므로 브릿지 패턴의 설계라고 설명할 수도 있습니다.
 실제 업무에서는 디코더뿐 아니라 인코더도 두고 메시지 오브젝트도 설계합니다.
 인코더는 json 기반 client 라면 response 를 json 형태로 만들어주는 모듈이라고 생각하시면 되고요.
-메시지 오브젝트는 client 의 data format 과 관계없이 이 프로그램 내부에서 사용되는 format 이라고 생각하시면 되겠습니다.
+메시지 오브젝트는 application 내부가 client 의 data format 에 의존하지 않도록
+내부에서 사용되는 format 이라고 생각하시면 되겠습니다.
 
 accepter 에서 client packet 을 받으면 decoder 로 하여금 완성된 요청을 분리하게 하고
 그 결과를 controller 모듈로 보내서 biz 로직을 처리하도록 합니다.
@@ -54,6 +56,19 @@ di 구현은 외부 mapper 파일과 reflection 기술을 사용하였습니다
 즉 command 에 매핑되는 controller 가 mapper 설정파일에 존재하게 됩니다.
 controller 구조 설계는 향후 이 프로그램이 압축,암호화뿐 아니라 다양한 요청을 처리할 수 있는
 열린 설계입니다.
+
+효율적인 설명을 위해 이쯤에서 흐름을 간단히 설명드리겠습니다.
+main 에서 설정 파일을 읽어서 decoder 를 매개변수로 acceptor server 를 실행합니다.
+client 로부터 요청이 들어오면 acceptor 는 byte array 를 decoder 로 전달하고
+decoder 는 완결된 요청을 뽑아서 돌려줍니다.
+acceptor 는 frontcontroller 로 요청을 전달합니다.
+frontcontroller 는 요청에 맞는 communicationconvertcontroller 가 처리를 하도록 합니다.
+communicationconvertcontroller 는 파일에서 8k 데이터를 읽은 후 요청에 맞는 converter 들에서 변환을 하도록 합니다.
+controller 는 변환된 내용을 client 에게 전송합니다.
+client 는 ack 를 보내면 같은 흐름으로 convertnextcontroller 가 실행됩니다.
+convertnextcontroller 는 eventbus 를 통해 ack 를 전달하고
+communicationconvertcontroller 는 이 이벤트를 받아서 다음 파일 8k 를 읽고 
+converting 을 한 결과를 client 에 전달합니다.
 
 ack 를 처리하는 convertnextcontroller 는 communicationconvertcontroller 가 
 파일의 다음 내용을 처리하도록 신호를 전달해야 합니다.
@@ -72,19 +87,6 @@ decorator pattern 은 decorator 가 아닌 기본 componant 가 하나 있어야 하는데
 설계는 암호화나 압축 순서를 모든 경우의 수로 조합할 수 있는 즉
 모든 클래스가 decorator 가 되야 하므로 like 라는 워드를 추가하였습니다.
 
-이제 흐름 및 기술 이야기를 해 보겠습니다.
-main 에서 설정 파일을 읽어서 decoder 를 매개변수로 acceptor server 를 실행합니다.
-client 로부터 요청이 들어오면 acceptor 는 byte array 를 decoder 로 전달하고
-decoder 는 완결된 요청을 뽑아서 돌려줍니다.
-acceptor 는 frontcontroller 로 요청을 전달합니다.
-frontcontroller 는 요청에 맞는 communicationconvertcontroller 가 처리를 하도록 합니다.
-communicationconvertcontroller 는 파일에서 8k 데이터를 읽은 후 요청에 맞는 converter 들에서 변환을 하도록 합니다.
-controller 는 변환된 내용을 client 에게 전송합니다.
-client 는 ack 를 보내면 같은 흐름으로 convertnextcontroller 가 실행됩니다.
-convertnextcontroller 는 eventbus 를 통해 ack 를 전달하고
-communicationconvertcontroller 는 이 이벤트를 받아서 다음 파일 8k 를 읽고 
-converting 을 한 결과를 client 에 전달합니다.
-
 기술 이야기를 시작하겠습니다.
 밀려들어오는 connect 요청들을 어떻게 refuse 하지 않고 받아내는지
 송수신, 변환, 파일처리의 cpu 비중을 어떻게 할지
@@ -96,9 +98,9 @@ converting 을 한 결과를 client 에 전달합니다.
 대표적으로 asynchronousserversocketchannel 인데 socket accept, r/w 기능을 수행합니다.
 client 입장에서 accept 를 빨리 처리 안해주면 exception 이 발생하므로 이 기능에 전체 쓰레드 8개 중 4개를
 할당하였습니다.
-또한 같은 이유로 accept 후 해야 할 일들은 이 4개가 아닌 biz threadpool 로 위임하고
+또한 같은 이유로 accept 리스너에서 해야 할 일들은 이 4개가 아닌 biz threadpool 로 위임하고
 socket 파라미터는 backlog size 100으로 변경하였습니다.
-biz threadpool 은 2개로 설정되어 있습니다. 2개로도 초당 수만개의 처리가 됩니다.
+biz threadpool 은 2개로 설정되어 있습니다. 2개로도 초당 최소 수만개의 처리가 됩니다.
 
 ByteBuffer 는 byte array 를 편하게 핸들링할 수 있어서 생산성이 향상될 뿐 아니라
 kenel memory 를 사용할 수 있는 direct memory access 기술을 사용할 수 있어서
@@ -137,7 +139,7 @@ converter는 현재까지 읽은 파일에서 확실한 부분만 처리하고 나머지는 보관합니다.
 예를들어 이번에 읽은 내용이 aaa 로 끝나면 3a 를 client 로 전송하지 않고 보관했다가
 다음번에 읽은 내용이 a 로 시작하면 이전것과 merge 하고 아니면 3a 를 확정하는 것입니다.
 
-프로토콜 프레임 설계는 매우 중요합니다. 이유를 설명 드리겠습니다.
+프로토콜 프레임 설계는 매우 중요합니다.
 프로토콜은 시작문자가 있어야 합니다. 유실이 덜되는 tcp 의 경우라도 결국 유실은 발생하기 때문입니다.
 패킷의 길이가 있어야 합니다. 그래야 어디까지 처리해야 할 지 알 수 있습니다.
 flow control 을 위해 통신번호도 꼭 있어야 합니다.

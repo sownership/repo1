@@ -7,16 +7,34 @@
 c10k problem 이라는 말도 있듯이
 단일 노드가 10000개 클라이언트를 동시에 서비스할 수 있다면 경쟁력이 있다고 생각할 수 있습니다.
 초당 얼마나 많은 요청을 처리할 수 있으면 많다고 말할 수 있을까요?
-각종 라이브러리들을 보았을 때 10k 클라이언트에서 10k 요청 처리면 고성능이라고 생각했습니다.
+각종 라이브러리들을 보았을 때 초당 10k 요청을 처리하면 고성능이라고 생각했습니다.
 그래서 10k 클라이언트에 10k 요청 처리를 목표로 설계를 진행하였습니다.
 설계대로 실제 구현을 해서 회사 노트북으로 성능 테스트를 해 보았는데요.
 동시 접속 10만 클라이언트에 정상적으로 서비스가 되었고
-1만개 클라이언트에 1만 tps 로 통신이 이루어졌습니다.
+1만개 클라이언트에서 1만 처리가 이루어졌습니다.
 회사 노트북에서 apache server keep-alive 모드로 1000tps 성능이 나오는 것을 보면 의미있는 수치로 보여집니다.
+
+모듈별 역할 및 흐름을 먼저 간단히 설명드리겠습니다.
+accepter 모듈은 client 와의 통신을 담당하는 모듈입니다.
+decoder 모듈은 client 로부터 들어오는 byte array 에서 의미있는 요청 단위로 분리해내는 모듈입니다.
+controller 모듈은 decoder 에서 분리된 요청을 실제 처리하는 모듈입니다.
+converter 모듈은 압축 및 암호화를 수행하는 모듈입니다.
+
+흐름을 설명 드리겠습니다. main 에서 acceptor server 를 실행합니다.
+accepter server 는 client 로부터 들어오는 byte array 를 decoder 로 전달하고
+decoder 는 완결된 단위로 요청을 뽑아서 돌려줍니다.
+acceptor 는 frontcontroller 로 요청을 전달합니다.
+frontcontroller 는 요청에 맞는 communicationconvertcontroller 에게 처리를 위임합니다.
+communicationconvertcontroller 는 파일에서 8k 데이터를 읽은 후 요청에 맞는 converter 들에서 변환을 하도록 합니다.
+controller 는 변환된 내용을 client 에게 전송하고 thread 는 종료됩니다.
+client 가 다시 ack 를 보내면 같은 흐름으로 convertnextcontroller 가 실행됩니다.
+convertnextcontroller 는 eventbus 를 통해 ack 를 전달하고
+communicationconvertcontroller 는 이 이벤트를 받아서 파일의 다음 8k 를 읽고 
+converting 을 한 결과를 client 에 전달합니다.
 
 유연성을 먼저 살펴보고 성능에 대해 말씀드리겠습니다.
 유연성 있는 설계에서 가장 중요한 부분은 변할 가능성이 있는 부분과 없는 부분을 명확하게 결정하는 것입니다.
-이 설계에서는 유연성의 포인트를 통신방식, 데이터포맷, 명령어셋 그리고 변환의 4개로 결정하였습니다.
+이 설계에서는 통신방식, 데이터포맷, 명령어셋 그리고 변환기능의 4개로 결정하였습니다.
 통신방식을 예로 들어 보면
 udp 통신이 추가로 요구된다면 acceptor 모듈에서 udp accepter 클래스와
 udp client 클래스만 추가하면 되고 나머지 모듈들은 변경이 없습니다.
@@ -26,13 +44,24 @@ json 데이터 포맷으로 통신이 필요하다면 decoder 모듈에서 json decoder 만 추가해 �
 즉 유연성을 확보하기 위해 시스템 전반적으로 open-closed 원칙이 적용된 것입니다.
 
 accepter 즉 서버모듈은 systemioaccepter 와 niosocketaccepter 가 있고 이들은 absioacceptor 로 동일하게 취급됩니다.
-설명을 위해 용어를 사용한다면 factory method pattern 을 적용하였다고 볼 수 있습니다.
+설계의 모든 부분이 다 object oriented programing 의 5원칙중 4개가 적용되어 있는데요.
+모두 같은 방식이므로 한번만 표현하도록 하겠습니다.
+niosocketaccepter 는 nio socket 통신만을 담당하고 systemioaccepter 는 system in out 역할만 담당하므로
+단일 책임의 원칙이 적용되었습니다.
+udpsocketaccepter 가 추가된다고 시스템의 다른 부분에 변화가 없고
+niosocketaccepter 의 변화가 필요하면 이 클래스만 변경되면 되므로 open-close 원칙이 적용되었구요.
+accepter 들은 absioacceptor 로 치환되어 사용되므로 리스코프치환의원칙이 적용되었고
+마지막으로 main 은 absioacceptor 추상에 의존하고 accepter 들 역시 이 추상에 의존하므로
+dependency inversion principle 이 적용되었습니다.
+
 client 는 연결 즉 session 의 의미입니다. web server 의 session 이라고 생각하시면 되겠습니다.
+systemioaccepter 서브클래스는 systemioclient 를 생성하고 niosocketaccepter 서브클래스는 niosocketclient 를 생성합니다.
+설명을 위해 용어를 사용한다면 factory method pattern 을 적용하였다고 볼 수 있습니다.
 
 지속적으로 들어오는 byte array 에서 의미있는 요청 단위를 분리해 내는 모듈이 decoder 인데요.
 이 의미있는 단위 요청은 web server 에서 httprequest 개념으로 생각하시면 되겠습니다.
-많은 클라이언트와 대량 통신을 하다보면 client 가 abc 라는 byte array를 한번에 전송해도
-server 는 a 를 받고 잠시 후에 bc 를 받는 경우가 발생할 수 있습니다.
+많은 클라이언트와 대량 통신을 하다보면 client 가 abcd 라는 byte array를 한번에 전송해도
+server 는 abc 를 받고 잠시 후에 d 를 받는 경우가 발생할 수 있습니다.
 이렇게 연속으로 들어오는 byte들의 어디부터 어디까지가 의미있는 하나의 요청인지 디코딩을 해서 분리해야 합니다.
 만약 abc 중 ab 가 완결된 요청이고 c 는 다음 요청의 일부라면
 decoder 는 ab 를 분리해서 돌려주고 c 는 가지고 있다가 다음 packet 과 연결해서 다시 decoding 을 하게 되는 것입니다.
@@ -47,9 +76,9 @@ server 는 경우에 따라 json 요청을 처리해야 할 수도 있고 xml 요청을 처리해야 할 �
 
 accepter 에서 client packet 을 받으면 decoder 로 하여금 완성된 요청을 분리하게 하고
 그 결과를 controller 모듈로 보내서 biz 로직을 처리하도록 합니다.
-controller 모듈은 front controller 패턴을 사용하였습니다.
+controller 모듈은 front controller 패턴으로 설계하였습니다.
 이곳에서 보안같은 공통 정책을 적용할 수 있습니다.
-front controller 에서는 요청의 command 에 따라 적절한 처리 controller 로 처리를 위임합니다.
+front controller 에서는 요청의 command 에 따라 적절한 처리 controller 로 위임합니다.
 front controller 와 처리 controller들은 서로간의 의존성을 없애기 위해
 dependancy inversion principle 과 외부 파일 설정으로 의존성을 주입하는 dependency injection 기술을 사용하였습니다.
 di 구현은 외부 mapper 파일과 reflection 기술을 사용하였습니다
@@ -57,32 +86,18 @@ di 구현은 외부 mapper 파일과 reflection 기술을 사용하였습니다
 controller 구조 설계는 향후 이 프로그램이 압축,암호화뿐 아니라 다양한 요청을 처리할 수 있는
 열린 설계입니다.
 
-효율적인 설명을 위해 이쯤에서 흐름을 간단히 설명드리겠습니다.
-main 에서 설정 파일을 읽어서 decoder 를 매개변수로 acceptor server 를 실행합니다.
-client 로부터 요청이 들어오면 acceptor 는 byte array 를 decoder 로 전달하고
-decoder 는 완결된 요청을 뽑아서 돌려줍니다.
-acceptor 는 frontcontroller 로 요청을 전달합니다.
-frontcontroller 는 요청에 맞는 communicationconvertcontroller 가 처리를 하도록 합니다.
-communicationconvertcontroller 는 파일에서 8k 데이터를 읽은 후 요청에 맞는 converter 들에서 변환을 하도록 합니다.
-controller 는 변환된 내용을 client 에게 전송합니다.
-client 는 ack 를 보내면 같은 흐름으로 convertnextcontroller 가 실행됩니다.
-convertnextcontroller 는 eventbus 를 통해 ack 를 전달하고
-communicationconvertcontroller 는 이 이벤트를 받아서 다음 파일 8k 를 읽고 
-converting 을 한 결과를 client 에 전달합니다.
-
 ack 를 처리하는 convertnextcontroller 는 communicationconvertcontroller 가 
 파일의 다음 내용을 처리하도록 신호를 전달해야 합니다.
-이 프로그램에서는 모듈간 결합도를 낮추기 위해 전체적으로 eventbus pattern 즉 pub/sub 를 사용합니다.
+이 프로그램에서는 모듈간 결합도를 낮추기 위해 eventbus pattern 을 사용합니다.
 communicationconvertcontroller 는 파일 8k 를 변환 후 sub 후 client 로 전송하고 thread 를 종료합니다.
 client 가 ack 를 보내오면 convertnextcontroller 는 pub 를 하게되고
 communicationconvertcontroller 가 다음 처리를 하게 됩니다.
-eventbus 구현은 whiteboard pattern 으로 하여 event source 와 event listener 간에 데이터
+eventbus 구현은 whiteboard pattern 을 활용하여 event source 와 event listener 간에 데이터
 결합만 존재하도록 하였습니다.
 
 컨버터는 압축 및 암호화를 담당하는 모듈입니다.
-controller 와 마찬가지로 client 요청 command 에 따라 그에 맞는 converter 들을 사용할 수 있도록
-전략패턴으로 설계되었고 mapper 설정파일로 dpendency injection 이 적용되어 있습니다.
-여러 압축과 암호화를 한번에 적용할 수 있도록 decorator like 패턴으로 설계되었습니다.
+controller 와 마찬가지로 client 요청 command 에 따라 dpendency injection 이 적용되어 있습니다.
+여러 압축과 암호화를 체이닝 형태로 적용할 수 있도록 decorator like 패턴으로 설계되었습니다.
 decorator pattern 은 decorator 가 아닌 기본 componant 가 하나 있어야 하는데
 설계는 암호화나 압축 순서를 모든 경우의 수로 조합할 수 있는 즉
 모든 클래스가 decorator 가 되야 하므로 like 라는 워드를 추가하였습니다.
@@ -94,30 +109,30 @@ decorator pattern 은 decorator 가 아닌 기본 componant 가 하나 있어야 하는데
 10만 클라이언트를 서비스하기 위해 사용된 전체 thread 수는 8 개입니다.
 즉 모든 i/o 및 biz logic 을 비동기로 작성하였습니다.
 우선 multicore 병렬처리에 비약적인 발전이 된 java8 이상을 사용합니다.
-그리고 java nio.2 의 비동기 통신을 지원하는 class 들을 사용합니다.
-대표적으로 asynchronousserversocketchannel 인데 socket accept, r/w 기능을 수행합니다.
-client 입장에서 accept 를 빨리 처리 안해주면 exception 이 발생하므로 이 기능에 전체 쓰레드 8개 중 4개를
+그리고 java nio.2 의 비동기 처리를 지원하는 class 들을 사용합니다.
+대표적으로 asynchronousserversocketchannel 인데 socket accept, r/w 기능을 비동기로 수행합니다.
+client 입장에서 accept 를 빨리 처리 안해주면 사용성이 떨어지므로 이 기능에 전체 쓰레드 8개 중 4개를
 할당하였습니다.
 또한 같은 이유로 accept 리스너에서 해야 할 일들은 이 4개가 아닌 biz threadpool 로 위임하고
 socket 파라미터는 backlog size 100으로 변경하였습니다.
 biz threadpool 은 2개로 설정되어 있습니다. 2개로도 초당 최소 수만개의 처리가 됩니다.
 
-ByteBuffer 는 byte array 를 편하게 핸들링할 수 있어서 생산성이 향상될 뿐 아니라
+ByteBuffer 는 byte array 를 쉽게 핸들링할 수 있어서 생산성이 향상될 뿐 아니라
 kenel memory 를 사용할 수 있는 direct memory access 기술을 사용할 수 있어서
 cpu, memory 사용율을 절감할 수 있습니다.
-소켓 송수신과 뒤에 이야기할 파일입출력은 이 dma 를 통해 커널 메모리를 직접 사용하여
+소켓 송수신과 뒤에 이야기할 파일입출력은 이 bytebuffer 를 통해 커널 메모리를 직접 사용하여
 힙메모리로의 복사가 생략되기 때문에 이 모듈에 대해
 cpu 20% memory 50% 절감 효과를 볼 수 있습니다.
-native code 와 관련되지 않은 나머지 모듈들은 직접 힙메모리를 쓰는 것이 더 성능이 좋습니다.
+native code 와 관련되지 않은 부분들은 직접 힙메모리를 쓰는 것이 더 성능이 좋습니다.
 아! 10만 클라이언트에 10만 파일을 처리하기 위한 bytebuffer 메모리는
 생성 및 소멸에 높은 cost 가 발생하므로
 bytebuffer pool 형태로 사용해야 cpu 사용율을 대폭 절감할 수 있겠습니다.
-그리고 10만 client 에 8kb 이면 800메가이지만 pool 을 사용하고 동시접속자가 1만이라면
+그리고 10만 client 에 8kb 이면 800메가이지만 pool 을 사용하고 동시처리가 1만이라면
 80메가 메모리만 사용하면 되기 때문입니다.
 
 controller 들은 모두 single instance 로 동작합니다.
 이유는 많은 클라이언트들이 동시에 많은 요청을 할 때마다 controller 를 생성하지 않기 위해서 입니다.
-즉 cpu, memory 사용율을 낮추기 위함이고 이는 was 의 servlet 과 유사한 구조라고 생각하시면 되겠습니다.
+즉 cpu, memory 사용율을 낮추기 위함이고 이는 was 의 servlet 과 유사한 메카니즘이라고 생각하시면 되겠습니다.
 
 이제 8kb 에 대해서도 이야기를 해 보겠습니다.
 NTFS 나 linux 의 recommand block size 는 4KB 이고 효율을 위해 보통 8KB 를 사용한다.
@@ -127,13 +142,6 @@ AsynchronousFileChannel 로 비동기 io 를 하고 싶으나
 jdk 의 windows 구현체의 경우는 부하가 걸릴때마다 thread 를 생성하는 문제가 있어서
 seekablefilechannel 을 사용하였습니다.
 linux 라면 AsynchronousFileChannel 로 동작하도록 설계합니다.
-
-통신 및 file read 는 os kernel 성능에 의존적이고
-client 수가 늘어날수록 단위시간당 통신 속도는 떨어지게 됩니다.
-반면에 convert 는 개발자의 능력에 의존적이라고 볼 수 있습니다.
-convert 튜닝 정도에 따라 프로그램의 수행속도는 몇배가 차이가 나게 됩니다.
-그래서 convert 에서 사용하는 모든 자료구조는
-복잡도 O(1) 을 지향해야 합니다.
 
 converter는 현재까지 읽은 파일에서 확실한 부분만 처리하고 나머지는 보관합니다.
 예를들어 이번에 읽은 내용이 aaa 로 끝나면 3a 를 client 로 전송하지 않고 보관했다가

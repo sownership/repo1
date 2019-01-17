@@ -12,9 +12,8 @@ c10k problem 이라는 말도 있듯이
 설계대로 실제 구현을 해서 회사 노트북으로 성능 테스트를 해 보았는데요.
 동시 접속 10만 클라이언트에 정상적으로 서비스가 되었고
 1만개 클라이언트에서 1만 처리가 이루어졌습니다.
-회사 노트북에서 apache server keep-alive 모드로 1000tps 성능이 나오는 것을 보면 의미있는 수치로 보여집니다.
 
-모듈별 역할 및 흐름을 먼저 간단히 설명드리겠습니다.
+그럼 우선 시스템의 전반적인 구성 및 흐름을 간단히 설명드리겠습니다.
 accepter 모듈은 client 와의 통신을 담당하는 모듈입니다.
 decoder 모듈은 client 로부터 들어오는 byte array 에서 의미있는 요청 단위로 분리해내는 모듈입니다.
 controller 모듈은 decoder 에서 분리된 요청을 실제 처리하는 모듈입니다.
@@ -43,6 +42,7 @@ json 데이터 포맷으로 통신이 필요하다면 decoder 모듈에서 json decoder 만 추가해 �
 명령어셋 및 변환 모듈도 같은 설명이 적용됩니다.
 즉 유연성을 확보하기 위해 시스템 전반적으로 open-closed 원칙이 적용된 것입니다.
 
+또한 모듈 단위 뿐 아니라 모듈 내 클래스들에 대해서도 유연성을 부여하였습니다.
 accepter 즉 서버모듈은 systemioaccepter 와 niosocketaccepter 가 있고 이들은 absioacceptor 로 동일하게 취급됩니다.
 설계의 모든 부분이 다 object oriented programing 의 5원칙중 4개가 적용되어 있는데요.
 모두 같은 방식이므로 한번만 표현하도록 하겠습니다.
@@ -56,11 +56,13 @@ dependency inversion principle 이 적용되었습니다.
 
 client 는 연결 즉 session 의 의미입니다. web server 의 session 이라고 생각하시면 되겠습니다.
 systemioaccepter 서브클래스는 systemioclient 를 생성하고 niosocketaccepter 서브클래스는 niosocketclient 를 생성합니다.
-설명을 위해 용어를 사용한다면 factory method pattern 을 적용하였다고 볼 수 있습니다.
+새로운 서버가와 client 가 생겼을 때 다른 class 들에 영향이 없기 위해서
+factory method pattern 을 적용하였습니다.
 
 지속적으로 들어오는 byte array 에서 의미있는 요청 단위를 분리해 내는 모듈이 decoder 인데요.
 이 의미있는 단위 요청은 web server 에서 httprequest 개념으로 생각하시면 되겠습니다.
-많은 클라이언트와 대량 통신을 하다보면 client 가 abcd 라는 byte array를 한번에 전송해도
+많은 클라이언트와 대량 통신을 하다보면 client 가 ack 와 stop 연속적으로 보냈다면
+라는 byte array를 한번에 전송해도
 server 는 abc 를 받고 잠시 후에 d 를 받는 경우가 발생할 수 있습니다.
 이렇게 연속으로 들어오는 byte들의 어디부터 어디까지가 의미있는 하나의 요청인지 디코딩을 해서 분리해야 합니다.
 만약 abc 중 ab 가 완결된 요청이고 c 는 다음 요청의 일부라면
@@ -92,8 +94,7 @@ ack 를 처리하는 convertnextcontroller 는 communicationconvertcontroller 가
 communicationconvertcontroller 는 파일 8k 를 변환 후 sub 후 client 로 전송하고 thread 를 종료합니다.
 client 가 ack 를 보내오면 convertnextcontroller 는 pub 를 하게되고
 communicationconvertcontroller 가 다음 처리를 하게 됩니다.
-eventbus 구현은 whiteboard pattern 을 활용하여 event source 와 event listener 간에 데이터
-결합만 존재하도록 하였습니다.
+eventbus 구현은 whiteboard pattern 을 활용하여 event source 와 event listener 간에 의존성을 없앴습니다.
 
 컨버터는 압축 및 암호화를 담당하는 모듈입니다.
 controller 와 마찬가지로 client 요청 command 에 따라 dpendency injection 이 적용되어 있습니다.
@@ -103,9 +104,8 @@ decorator pattern 은 decorator 가 아닌 기본 componant 가 하나 있어야 하는데
 모든 클래스가 decorator 가 되야 하므로 like 라는 워드를 추가하였습니다.
 
 기술 이야기를 시작하겠습니다.
-밀려들어오는 connect 요청들을 어떻게 refuse 하지 않고 받아내는지
-송수신, 변환, 파일처리의 cpu 비중을 어떻게 할지
-1GB 메모리로 어떻게 10만 요청을 정상적으로 처리할지 등등에 대한 것들을 고려하여 기술을 선정하였습니다.
+1만 이상의 클라이언트 요청들을 어떻게 refuse 하지 않고 받아낼지
+1GB 메모리로 어떻게 1만 요청을 정상적으로 처리할지 등등에 대한 것들을 고려하여 기술을 선정하였습니다.
 10만 클라이언트를 서비스하기 위해 사용된 전체 thread 수는 8 개입니다.
 즉 모든 i/o 및 biz logic 을 비동기로 작성하였습니다.
 우선 multicore 병렬처리에 비약적인 발전이 된 java8 이상을 사용합니다.
@@ -118,7 +118,7 @@ socket 파라미터는 backlog size 100으로 변경하였습니다.
 biz threadpool 은 2개로 설정되어 있습니다. 2개로도 초당 최소 수만개의 처리가 됩니다.
 
 ByteBuffer 는 byte array 를 쉽게 핸들링할 수 있어서 생산성이 향상될 뿐 아니라
-kenel memory 를 사용할 수 있는 direct memory access 기술을 사용할 수 있어서
+io 관련하여 kenel memory 를 직접 사용할 수 있어서
 cpu, memory 사용율을 절감할 수 있습니다.
 소켓 송수신과 뒤에 이야기할 파일입출력은 이 bytebuffer 를 통해 커널 메모리를 직접 사용하여
 힙메모리로의 복사가 생략되기 때문에 이 모듈에 대해
@@ -137,14 +137,14 @@ controller 들은 모두 single instance 로 동작합니다.
 이제 8kb 에 대해서도 이야기를 해 보겠습니다.
 NTFS 나 linux 의 recommand block size 는 4KB 이고 효율을 위해 보통 8KB 를 사용한다.
 8KB 이하는 8KB 보다 성능이 떨어지고 8KB 이상은 메모리 소비 대비 효율이 높지 않습니다.
-그리고 동시 10만 클라이언트를 지원하기 위해 8KB 로 설계를 진행하였습니다.
+그리고 초당 1만개 이상의 처리를 하기 위해 8KB 로 설계를 진행하였습니다.
 AsynchronousFileChannel 로 비동기 io 를 하고 싶으나
 jdk 의 windows 구현체의 경우는 부하가 걸릴때마다 thread 를 생성하는 문제가 있어서
 seekablefilechannel 을 사용하였습니다.
 linux 라면 AsynchronousFileChannel 로 동작하도록 설계합니다.
 
 converter는 현재까지 읽은 파일에서 확실한 부분만 처리하고 나머지는 보관합니다.
-예를들어 이번에 읽은 내용이 aaa 로 끝나면 3a 를 client 로 전송하지 않고 보관했다가
+예를들어 이번에 읽은 내용이 aaa 로 끝나면 3a 를 client 로 전송하지 않고 3a 상태로 보관했다가
 다음번에 읽은 내용이 a 로 시작하면 이전것과 merge 하고 아니면 3a 를 확정하는 것입니다.
 
 프로토콜 프레임 설계는 매우 중요합니다.

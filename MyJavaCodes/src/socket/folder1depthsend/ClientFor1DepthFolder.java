@@ -22,7 +22,7 @@ public class ClientFor1DepthFolder {
 				InputStream bis = new BufferedInputStream(s.getInputStream());
 				DataInputStream dis = new DataInputStream(bis)) {
 
-			File dir = new File("SOURCEDIR");
+			File dir = new File("resource\\SOURCEDIR");
 			File[] files = dir.listFiles();
 
 			// start character

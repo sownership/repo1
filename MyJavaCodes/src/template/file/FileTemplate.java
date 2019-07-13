@@ -89,6 +89,6 @@ public class FileTemplate {
 	
 	public static void main(String[] args) {
 		FileTemplate ft = new FileTemplate();
-		ft.randomAccessFile("C:\\ljg\\eclipse-jee-oxygen-2-win32\\ws\\git\\repo1\\MyJavaCodes\\SOURCEDIR\\ra.txt");
+		ft.randomAccessFile("C:\\ljg\\eclipse-jee-oxygen-2-win32\\ws\\git\\repo1\\MyJavaCodes\\resource\\SOURCEDIR\\ra.txt");
 	}
 }

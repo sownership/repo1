@@ -15,8 +15,8 @@ public class Diff {
 
 	public static void main(String[] args) throws FileNotFoundException, IOException {
 
-		String lRoot = ".\\SRCTOP";
-		String rRoot = ".\\\\DESTOP\\\\SRCTOP";
+		String lRoot = ".\\resource\\SRCTOP";
+		String rRoot = ".\\resource\\DESTOP\\SRCTOP";
 
 		Map<File, Boolean> fileSameMap = new HashMap<>();
 

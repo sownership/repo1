@@ -75,7 +75,7 @@ public class BlockTest {
 
 	private static List<Transaction> loadTransactions() {
 		List<Transaction> transactions = new LinkedList<>();
-		try (BufferedReader br = new BufferedReader(new FileReader("./SOURCEDIR/transactions.txt"))) {
+		try (BufferedReader br = new BufferedReader(new FileReader("./resource/SOURCEDIR/transactions.txt"))) {
 			String line;
 			while ((line = br.readLine()) != null) {
 				String[] ss = line.split(",");

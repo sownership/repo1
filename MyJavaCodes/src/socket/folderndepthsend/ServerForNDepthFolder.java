@@ -60,7 +60,7 @@ public class ServerForNDepthFolder {
 		long remain = size;
 		int len;
 
-		try (FileOutputStream fos = new FileOutputStream("DESTOP" + File.separator + path + File.separator + name);
+		try (FileOutputStream fos = new FileOutputStream("resource\\DESTOP" + File.separator + path + File.separator + name);
 				BufferedOutputStream bos = new BufferedOutputStream(fos)) {
 
 			while ((len = dis.read(buf, 0, (int) Math.min(remain, buf.length))) > 0) {
@@ -78,9 +78,9 @@ public class ServerForNDepthFolder {
 		String name = dis.readUTF();
 
 		// make directory
-		boolean isMkdirSuccess = new File("DESTOP" + File.separator + path + File.separator + name).mkdir();
+		boolean isMkdirSuccess = new File("resource\\DESTOP" + File.separator + path + File.separator + name).mkdir();
 		if (!isMkdirSuccess) {
-			throw new Exception("DESTOP" + File.separator + path + File.separator + name + " create failed.");
+			throw new Exception("resource\\DESTOP" + File.separator + path + File.separator + name + " create failed.");
 		}
 	}
 }

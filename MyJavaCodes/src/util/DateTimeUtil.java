@@ -27,8 +27,10 @@ public class DateTimeUtil {
 	}
 
 	private static String addToHms(String HHmmss1, String HHmmss2) throws ParseException {
+		return toHms(addToSeconds(HHmmss1, HHmmss2));
+	}
 
-		int seconds = addToSeconds(HHmmss1, HHmmss2);
+	private static String toHms(int seconds) {
 		int h = seconds / (60 * 60);
 		int m = seconds / 60 % 60;
 		int s = seconds % 60;
@@ -37,8 +39,10 @@ public class DateTimeUtil {
 	}
 
 	private static String addTodHms(String HHmmss1, String HHmmss2) throws ParseException {
+		return todHms(addToSeconds(HHmmss1, HHmmss2));
+	}
 
-		int seconds = addToSeconds(HHmmss1, HHmmss2);
+	private static String todHms(int seconds) {
 		int d = seconds / (60 * 60 * 24);
 		int h = seconds / (60 * 60) % 24;
 		int m = seconds / 60 % 60;
@@ -62,13 +66,7 @@ public class DateTimeUtil {
 	}
 
 	private static String subtractToHms(String HHmmss1, String HHmmss2) throws ParseException {
-
-		int seconds = subtractToSeconds(HHmmss1, HHmmss2);
-		int h = seconds / (60 * 60);
-		int m = seconds / 60 % 60;
-		int s = seconds % 60;
-
-		return String.format("%02d%02d%02d", h, m, s);
+		return toHms(subtractToSeconds(HHmmss1, HHmmss2));
 	}
 
 	private static String subtractTodHms(String yyyyMMddHHmmss1, String yyyyMMddHHmmss2) throws ParseException {
@@ -77,13 +75,8 @@ public class DateTimeUtil {
 		long d1 = sdf.parse(yyyyMMddHHmmss1).getTime();
 		long d2 = sdf.parse(yyyyMMddHHmmss2).getTime();
 
-		long seconds = d2 - d1;
-		long diffD = seconds / (1000 * 60 * 60 * 24);
-		long diffH = seconds / (1000 * 60 * 60) % 24;
-		long diffM = seconds / (1000 * 60) % 60;
-		long diffS = seconds / 1000 % 60;
-
-		return String.format("%02d%02d%02d%02d", diffD, diffH, diffM, diffS);
+		int seconds = (int) ((d2 - d1) / 1000);
+		return todHms(seconds);
 	}
 
 }

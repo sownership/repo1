@@ -28,7 +28,7 @@ public class ParkingFee {
 
 	public static void main(String[] args) throws FileNotFoundException, IOException, ParseException {
 
-//		startServer();
+		startServer();
 
 		startConsole();
 	}
@@ -71,9 +71,15 @@ public class ParkingFee {
 						BufferedInputStream bis = new BufferedInputStream(s.getInputStream());
 						OutputStream out = s.getOutputStream()) {
 					byte[] b = new byte[1024];
-					int len = bis.read(b);
-					String cmd = new String(b, 0, len);
-					cmdProcess(cmd, out);
+					int len;
+					while(true) {
+						len = bis.read(b);
+						String cmd = new String(b, 0, len);
+						if("quit".equals(cmd)) {
+							break;
+						}
+						cmdProcess(cmd, out);
+					}
 				} catch (IOException | ParseException e) {
 					e.printStackTrace();
 				}

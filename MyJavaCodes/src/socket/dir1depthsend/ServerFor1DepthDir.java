@@ -11,7 +11,7 @@ import java.net.Socket;
 
 public class ServerFor1DepthDir {
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws IOException {
 
 		try (ServerSocket ss = new ServerSocket(10000);) {
 
@@ -19,13 +19,10 @@ public class ServerFor1DepthDir {
 				Socket s = ss.accept();
 				receiveFiles(s);
 			}
-
-		} catch (IOException e) {
-			e.printStackTrace();
 		}
 	}
 
-	private static void receiveFiles(Socket clientSocket) {
+	private static void receiveFiles(Socket clientSocket) throws IOException {
 
 		try (Socket s = clientSocket;
 				DataInputStream dis = new DataInputStream(new BufferedInputStream(s.getInputStream()));
@@ -62,9 +59,6 @@ public class ServerFor1DepthDir {
 
 			// bye-bye
 			dos.writeUTF("bye-bye");
-
-		} catch (IOException e) {
-			e.printStackTrace();
 		}
 	}
 }

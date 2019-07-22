@@ -60,8 +60,8 @@ public class ServerForNDepthDir {
 		long remain = size;
 		int len;
 
-		try (FileOutputStream fos = new FileOutputStream("resource\\DESTOP" + File.separator + path + File.separator + name);
-				BufferedOutputStream bos = new BufferedOutputStream(fos)) {
+		try (BufferedOutputStream bos = new BufferedOutputStream(
+				new FileOutputStream("resource\\DESTOP" + File.separator + path + File.separator + name))) {
 
 			while ((len = dis.read(buf, 0, (int) Math.min(remain, buf.length))) > 0) {
 				// write file

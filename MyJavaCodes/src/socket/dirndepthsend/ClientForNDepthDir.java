@@ -7,19 +7,16 @@ import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.Socket;
+import java.net.UnknownHostException;
 
 public class ClientForNDepthDir {
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws UnknownHostException, IOException {
 
 		try (Socket s = new Socket("127.0.0.1", 5555);
-				OutputStream bos = new BufferedOutputStream(s.getOutputStream());
-				DataOutputStream dos = new DataOutputStream(bos);
-				InputStream bis = new BufferedInputStream(s.getInputStream());
-				DataInputStream dis = new DataInputStream(bis)) {
+				DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(s.getOutputStream()));
+				DataInputStream dis = new DataInputStream(new BufferedInputStream(s.getInputStream()))) {
 
 			File dir = new File("SRCTOP");
 			send(dos, dir);
@@ -31,9 +28,6 @@ public class ClientForNDepthDir {
 				;
 
 			System.out.println("bye-bye");
-
-		} catch (IOException e) {
-			e.printStackTrace();
 		}
 	}
 
@@ -80,7 +74,7 @@ public class ClientForNDepthDir {
 		dos.writeLong(file.length());
 
 		// data
-		try (InputStream is = new FileInputStream(file); BufferedInputStream bis = new BufferedInputStream(is)) {
+		try (BufferedInputStream bis = new BufferedInputStream(new FileInputStream(file))) {
 			byte[] buf = new byte[1024 * 8];
 			int len;
 			while ((len = bis.read(buf)) != -1) {

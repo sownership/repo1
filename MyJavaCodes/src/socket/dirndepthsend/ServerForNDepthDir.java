@@ -1,4 +1,4 @@
-package socket.folderndepthsend;
+package socket.dirndepthsend;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -10,7 +10,7 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
-public class ServerForNDepthFolder {
+public class ServerForNDepthDir {
 
 	public static void main(String[] args) {
 

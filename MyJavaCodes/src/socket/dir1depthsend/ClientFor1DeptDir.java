@@ -1,4 +1,4 @@
-package socket.folder1depthsend;
+package socket.dir1depthsend;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -12,7 +12,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 
-public class ClientFor1DepthFolder {
+public class ClientFor1DeptDir {
 
 	public static void main(String[] args) {
 

@@ -11,13 +11,13 @@ import javax.xml.bind.DatatypeConverter;
 
 public class ServerForPoorClient {
 
-	public static void main(String[] args) {
+	public static void main(String[] args) throws IOException {
 
 		ServerForPoorClient instance = new ServerForPoorClient();
 		instance.startServer();
 	}
 
-	private void startServer() {
+	private void startServer() throws IOException {
 		try (ServerSocket ss = new ServerSocket(10000)) {
 			while (true) {
 				Socket cs = ss.accept();
@@ -31,8 +31,6 @@ public class ServerForPoorClient {
 				t.setDaemon(true);
 				t.start();
 			}
-		} catch (IOException e) {
-			e.printStackTrace();
 		}
 	}
 

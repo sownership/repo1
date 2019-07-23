@@ -100,8 +100,8 @@ public class ParkingFee {
 
 	private static void carNoProcess(String cmd, OutputStream out)
 			throws FileNotFoundException, IOException, ParseException {
-		String[] cmdE = cmd.split("=");
-		String carNo = cmdE[1];
+		String[] sa = cmd.split("=");
+		String carNo = sa[1];
 
 		Map<String, Integer> dateParkingtime = new TreeMap<>();
 		Map<String, Integer> dateParkingFee = new TreeMap<>();
@@ -141,8 +141,8 @@ public class ParkingFee {
 
 	private static void dateProcess(String cmd, OutputStream out)
 			throws FileNotFoundException, IOException, ParseException {
-		String[] cmdE = cmd.split("=");
-		String date = cmdE[1];
+		String[] sa = cmd.split("=");
+		String date = sa[1];
 
 		Map<String, Integer> carParkingFee = new TreeMap<>();
 
@@ -199,19 +199,19 @@ public class ParkingFee {
 
 	private static void reportForCarNo(String cmd, Map<String, Integer> dateParkingtime,
 			Map<String, Integer> dateParkingFee, OutputStream out) throws IOException {
-		BufferedOutputStream bis = new BufferedOutputStream(out);
-		bis.write(cmd.getBytes());
+		BufferedOutputStream bos = new BufferedOutputStream(out);
+		bos.write(cmd.getBytes());
 		for (Map.Entry<String, Integer> e : dateParkingtime.entrySet()) {
 			String yyyyMMdd = e.getKey();
-			bis.write("#".getBytes());
-			bis.write(yyyyMMdd.getBytes());
-			bis.write("#".getBytes());
-			bis.write(toHms(e.getValue()).getBytes());
-			bis.write("#".getBytes());
-			bis.write(String.valueOf(dateParkingFee.get(yyyyMMdd)).getBytes());
+			bos.write("#".getBytes());
+			bos.write(yyyyMMdd.getBytes());
+			bos.write("#".getBytes());
+			bos.write(toHms(e.getValue()).getBytes());
+			bos.write("#".getBytes());
+			bos.write(String.valueOf(dateParkingFee.get(yyyyMMdd)).getBytes());
 		}
-		bis.write("\n".getBytes());
-		bis.flush();
+		bos.write("\n".getBytes());
+		bos.flush();
 	}
 
 	private static String toHms(int seconds) {

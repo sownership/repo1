@@ -1,11 +1,13 @@
 package util;
 
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Queue;
@@ -14,13 +16,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 public class FileUtil {
 
-	public static void main(String[] args) throws IOException {
-//		dirCopy("C:\\ljg\\tmp\\1", "C:\\ljg\\tmp\\2");
-//		dirDelete("C:\\ljg\\tmp\\2\\1");
-//		System.out.println(searchFile("C:\\ljg\\eclipse\\ws\\git\\repo1\\MyJavaCodes\\resource\SOURCEDIR", ".txt"));
-		dirCopy2(".\\resource\\SRCTOP", ".\\resource\\DESTOP");
-	}
-	
 	private static void dirCopy2(String src, String destParent) throws IOException {
 		Path srcPath = Paths.get(src);
 		Path dstPath = Paths.get(destParent, srcPath.getFileName().toString());
@@ -84,5 +79,34 @@ public class FileUtil {
 			}
 		}
 		return result;
+	}
+
+	private static boolean isSame(Path p1, Path p2) throws IOException {
+		if (p1.toFile().length() != p2.toFile().length()) {
+			return false;
+		}
+		try (BufferedInputStream bis1 = new BufferedInputStream(Files.newInputStream(p1, StandardOpenOption.READ));
+				BufferedInputStream bis2 = new BufferedInputStream(Files.newInputStream(p2, StandardOpenOption.READ))) {
+			while (bis1.available() > 0 || bis2.available() > 0) {
+				if (bis1.read() != bis2.read()) {
+					return false;
+				}
+			}
+		}
+		return true;
+	}
+
+	private static boolean isSame(File f1, File f2) throws IOException {
+		return isSame(f1.toPath(), f2.toPath());
+	}
+
+	public static void main(String[] args) throws IOException {
+//		dirCopy("C:\\ljg\\tmp\\1", "C:\\ljg\\tmp\\2");
+//		dirDelete("C:\\ljg\\tmp\\2\\1");
+//		System.out.println(searchFile("C:\\ljg\\eclipse\\ws\\git\\repo1\\MyJavaCodes\\resource\SOURCEDIR", ".txt"));
+//		dirCopy2(".\\resource\\SRCTOP", ".\\resource\\DESTOP");
+		System.out.println(
+				isSame(new File("C:\\ljg\\eclipse\\ws\\git\\repo1\\MyJavaCodes\\resource\\DESTOP\\SRCTOP\\eclipse.ini"),
+						new File("C:\\ljg\\eclipse\\ws\\git\\repo1\\MyJavaCodes\\resource\\SRCTOP\\eclipse.ini")));
 	}
 }

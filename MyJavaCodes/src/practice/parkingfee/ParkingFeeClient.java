@@ -1,4 +1,4 @@
-package practice;
+package practice.parkingfee;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;

@@ -1,4 +1,4 @@
-package blockchain;
+package practice.blockchain;
 
 import java.util.Date;
 

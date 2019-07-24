@@ -1,4 +1,4 @@
-package socket.dir1depthsend;
+package practice.dir1depthsend;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;

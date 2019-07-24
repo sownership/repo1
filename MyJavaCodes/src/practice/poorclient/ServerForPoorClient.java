@@ -1,4 +1,4 @@
-package socket.poorclient;
+package practice.poorclient;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;

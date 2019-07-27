@@ -2,14 +2,56 @@ package util;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Date;
+import java.util.concurrent.TimeUnit;
 
 public class DateTimeUtil {
 
 	public static void main(String[] args) throws ParseException {
 
-		System.out.println(subtractToHms("091100", "141010"));
-		System.out.println(subtractToSeconds("091100", "141010"));
-		System.out.println(subtractTodHms("20180530090500", "20180531080601"));
+//		System.out.println(subtractToHms("091100", "141010"));
+//		System.out.println(subtractToSeconds("091100", "141010"));
+//		System.out.println(subtractTodHms("20180530090500", "20180531080601"));
+
+		System.out.println(addTime("10:10:10", "16:05:03"));
+	}
+
+	/**
+	 * addTime("10:10:10", "10:05:03") = 20:15:13
+	 */
+	private static String addTime(String time1, String time2) throws ParseException {
+
+		SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
+		long after = sdf.parse(time2).getTime() - sdf.parse("00:00:00").getTime();
+		return sdf.format(new Date(sdf.parse(time1).getTime() + after));
+	}
+
+	/**
+	 * subTime("10:10:10", "10:05:03") = 00:05:07
+	 */
+	private static String subTime(String time1, String time2) throws ParseException {
+
+		SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
+		long before = sdf.parse(time2).getTime() - sdf.parse("00:00:00").getTime();
+		return sdf.format(new Date(sdf.parse(time1).getTime() - before));
+	}
+
+	/**
+	 * addDate("20190228 10:10:10", 5) = 20190305 10:10:10
+	 */
+	private static String addDate(String date1, int days) throws ParseException {
+
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd HH:mm:ss");
+		return sdf.format(new Date(sdf.parse(date1).getTime() + days * 24 * 60 * 60 * 1000));
+	}
+
+	/**
+	 * subDate("20190228 10:10:10", 5) = 20190223 10:10:10
+	 */
+	private static String subDate(String date1, int days) throws ParseException {
+		return addDate(date1, -days);
 	}
 
 	private static int addToSeconds(String HHmmss1, String HHmmss2) throws ParseException {

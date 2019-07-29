@@ -61,7 +61,7 @@ public class FileTemplate {
 		try (RandomAccessFile file = new RandomAccessFile(fs, "rw");) {
 
 			file.seek(3);
-			int aByte = file.read();
+			System.out.println((char) file.read());
 			file.write("Hello World".getBytes());
 			long pointer = file.getFilePointer();
 			System.out.println(pointer);

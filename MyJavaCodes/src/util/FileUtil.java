@@ -37,8 +37,7 @@ public class FileUtil {
 		File destD = new File(destParent, srcD.getName());
 		destD.mkdir();
 
-		File[] fs = srcD.listFiles();
-		for (File f : fs) {
+		for (File f : srcD.listFiles()) {
 			if (f.isDirectory()) {
 				dirCopy(f.getPath(), destD.getPath());
 			} else {
@@ -49,8 +48,7 @@ public class FileUtil {
 
 	private static void dirDelete(String dir) throws IOException {
 		File target = new File(dir);
-		File[] fs = target.listFiles();
-		for (File f : fs) {
+		for (File f : target.listFiles()) {
 			if (f.isDirectory()) {
 				dirDelete(f.getAbsolutePath());
 			} else {

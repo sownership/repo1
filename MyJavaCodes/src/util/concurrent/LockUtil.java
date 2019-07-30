@@ -8,24 +8,14 @@ public class LockUtil {
 	}
 
 	private void test() {
-		new Thread(new Runnable() {
-
-			@Override
-			public void run() {
-				test1();
+		new Thread(() -> test1()).start();
+		new Thread(() -> {
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
 			}
-		}).start();
-		new Thread(new Runnable() {
-
-			@Override
-			public void run() {
-				try {
-					Thread.sleep(1000);
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
-				test2();
-			}
+			test2();
 		}).start();
 	}
 

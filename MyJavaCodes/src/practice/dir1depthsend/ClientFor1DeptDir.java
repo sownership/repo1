@@ -18,7 +18,7 @@ public class ClientFor1DeptDir {
 				DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(s.getOutputStream()));
 				DataInputStream dis = new DataInputStream(new BufferedInputStream(s.getInputStream()))) {
 
-			File dir = new File("resource\\SOURCEDIR");
+			File dir = new File("resource\\practice\\dir1depthsend\\SOURCEDIR");
 			File[] files = dir.listFiles();
 
 			// start character

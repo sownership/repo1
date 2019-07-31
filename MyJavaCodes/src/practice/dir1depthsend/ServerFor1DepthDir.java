@@ -44,7 +44,7 @@ public class ServerFor1DepthDir {
 
 				// file
 				try (BufferedOutputStream fbos = new BufferedOutputStream(
-						new FileOutputStream("resource\\DESTDIR\\" + fileName))) {
+						new FileOutputStream("resource\\practice\\dir1depthsend\\DESTDIR\\" + fileName))) {
 
 					byte[] fileBuf = new byte[1024 * 8];
 					int remain = versionInfoFileLen;

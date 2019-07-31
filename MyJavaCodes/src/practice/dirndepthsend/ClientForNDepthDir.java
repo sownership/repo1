@@ -18,7 +18,7 @@ public class ClientForNDepthDir {
 				DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(s.getOutputStream()));
 				DataInputStream dis = new DataInputStream(new BufferedInputStream(s.getInputStream()))) {
 
-			File dir = new File("SRCTOP");
+			File dir = new File(".\\resource\\practice\\dirndepthsend\\SRCTOP");
 			send(dos, dir);
 
 			dos.writeUTF("END");

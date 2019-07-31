@@ -34,7 +34,7 @@ public class ParkingFee {
 	}
 
 	private static void startConsole() throws IOException, ParseException {
-		try (OutputStream out = new FileOutputStream("resource\\parkingfee\\output\\RESULT.TXT", true)) {
+		try (OutputStream out = new FileOutputStream("resource\\practice\\parkingfee\\output\\RESULT.TXT", true)) {
 			while (true) {
 				String cmd = sc.nextLine();
 				if ("quit".equals(cmd)) {
@@ -175,7 +175,7 @@ public class ParkingFee {
 
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
 
-		File dir = new File(".\\resource\\parkingfee\\input");
+		File dir = new File(".\\resource\\practice\\parkingfee\\input");
 		Queue<File> q = new LinkedBlockingQueue<>();
 		q.offer(dir);
 		while (!q.isEmpty()) {
@@ -263,7 +263,7 @@ public class ParkingFee {
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
 		sdf.setLenient(false);
 
-		File dir = new File(".\\resource\\parkingfee\\input");
+		File dir = new File(".\\resource\\practice\\parkingfee\\input");
 		Queue<File> q = new LinkedBlockingQueue<>();
 		q.offer(dir);
 		while (!q.isEmpty()) {

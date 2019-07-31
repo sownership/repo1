@@ -61,7 +61,7 @@ public class ServerForNDepthDir {
 		int len;
 
 		try (BufferedOutputStream bos = new BufferedOutputStream(
-				new FileOutputStream("resource\\DESTOP" + File.separator + path + File.separator + name))) {
+				new FileOutputStream("resource\\practice\\dirndepthsend\\DESTOP" + File.separator + path + File.separator + name))) {
 
 			while ((len = dis.read(buf, 0, (int) Math.min(remain, buf.length))) > 0) {
 				// write file
@@ -78,9 +78,9 @@ public class ServerForNDepthDir {
 		String name = dis.readUTF();
 
 		// make directory
-		boolean isMkdirSuccess = new File("resource\\DESTOP" + File.separator + path + File.separator + name).mkdir();
+		boolean isMkdirSuccess = new File("resource\\practice\\dirndepthsend\\DESTOP" + File.separator + path + File.separator + name).mkdir();
 		if (!isMkdirSuccess) {
-			throw new Exception("resource\\DESTOP" + File.separator + path + File.separator + name + " create failed.");
+			throw new Exception("resource\\practice\\dirndepthsend\\DESTOP" + File.separator + path + File.separator + name + " create failed.");
 		}
 	}
 }

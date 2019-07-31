@@ -1,4 +1,4 @@
-package util;
+package practice.diff;
 
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -15,8 +15,8 @@ public class Diff {
 
 	public static void main(String[] args) throws FileNotFoundException, IOException {
 
-		String lRoot = ".\\resource\\SRCTOP";
-		String rRoot = ".\\resource\\DESTOP\\SRCTOP";
+		String lRoot = ".\\resource\\practice\\diff\\SRCTOP";
+		String rRoot = ".\\resource\\practice\\diff\\DESTOP\\SRCTOP";
 
 		Map<File, Boolean> fileSameMap = new HashMap<>();
 

@@ -7,203 +7,371 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.LineNumberReader;
 import java.io.RandomAccessFile;
 import java.io.Reader;
 import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
 
 public class SvnServer {
 
-	public static void main(String[] args) throws IOException {
-		SvnServer ins = new SvnServer();
-		Path asis = Paths.get(
+	public static void main(String[] args) throws FileNotFoundException, IOException {
+		Path svnFilePath = Paths.get(
 				"C:\\ljg\\eclipse\\ws\\git\\repo1\\MyJavaCodes\\resource\\practice\\svn\\server\\root\\d1\\1_a.txt");
-		Path request = Paths
+		Path inputFilePath = Paths
 				.get("C:\\ljg\\eclipse\\ws\\git\\repo1\\MyJavaCodes\\resource\\practice\\svn\\client\\a.txt");
-		Files.readAllLines(ins.commit(asis, request)).forEach((line) -> {
-			System.out.println(line);
+//		Files.readAllLines(commit1(svnFilePath, inputFilePath)).forEach((l) -> {
+//			System.out.println(l);
+//		});
+		Files.readAllLines(commit2(svnFilePath, inputFilePath)).forEach((l) -> {
+			System.out.println(l);
 		});
 	}
 
-	public static class Position {
-		String line;
-		int lineNumber = -1;
+	public static class AsisReader extends LineNumberReader {
 
-		public void next(String line) {
-			this.line = line;
-			lineNumber++;
-		}
-
-		@Override
-		public String toString() {
-			return lineNumber + ":" + line;
-		}
-	}
-
-	public static class FindLineRaf extends RandomAccessFile {
-
-		Position pos = new Position();
-
-		@Override
-		public String toString() {
-			return pos.toString();
-		}
-
-		public FindLineRaf(File file, String mode) throws FileNotFoundException {
-			super(file, mode);
-		}
-
-		public int offsetOfSame(String line) throws IOException {
-			long mark = getFilePointer();
-			int offset = 0;
-			String tmpLine = pos.line;
-			try {
-				while (tmpLine != null) {
-					if (line.equals(tmpLine)) {
-						return offset;
-					}
-					offset++;
-					tmpLine = readLine();
-				}
-			} finally {
-				seek(mark);
-			}
-			return -1;
-		}
-
-		public int offsetOfModify(String line) throws IOException {
-			long mark = getFilePointer();
-			int offset = 0;
-			String tmpLine = pos.line;
-			try {
-				while (tmpLine != null) {
-					if (isModified(line, tmpLine)) {
-						return offset;
-					}
-					offset++;
-					tmpLine = readLine();
-				}
-			} finally {
-				seek(mark);
-			}
-			return -1;
-		}
-
-		public boolean isModified(String line1, String line2) {
-			return false;
-		}
-
-		public void moveNextLine() throws IOException {
-			pos.next(readLine());
-		}
-	}
-
-	public static class TobeBufferedWriter extends BufferedWriter {
-
-		public TobeBufferedWriter(Writer out) {
-			super(out);
-		}
-
-		public void writeAdd(int asisLineNumber, String addedLine) throws IOException {
-			write(asisLineNumber + "#ADDED");
-			newLine();
-			write(addedLine);
-			newLine();
-		}
-
-		public void writeDelete(int asisLineNumber) throws IOException {
-			write(asisLineNumber + "#DELETED");
-			newLine();
-		}
-
-		public void writeModify(int asisLineNumber, String modifiedLine) throws IOException {
-			write(asisLineNumber + "#MODIFIED");
-			newLine();
-			write(modifiedLine);
-			newLine();
-		}
-	}
-
-	public static class AsisReader extends BufferedReader {
-
-		Position pos = new Position();
-
-		@Override
-		public String toString() {
-			return pos.toString();
-		}
+		String lineVal;
 
 		public AsisReader(Reader in) {
 			super(in);
 		}
 
-		public void moveNextLine() throws IOException {
-			pos.next(super.readLine());
+		public String next() throws IOException {
+			return lineVal = readLine();
+		}
+
+		public String getLine() {
+			return lineVal;
 		}
 	}
 
-	/**
-	 * @param asis    filename format: revision + "_" + name
-	 * @param request
-	 * @return
-	 * @throws IOException
-	 */
-	public Path commit(Path asis, Path request) throws IOException {
+	public static class InputRaf extends RandomAccessFile {
 
-		String[] fileNameElements = asis.getFileName().toString().split("_");
-		Path tobe = asis.resolveSibling((Integer.parseInt(fileNameElements[0]) + 1) + "_" + fileNameElements[1]);
+		String lineVal;
+		int lineNum;
 
-		try (AsisReader asisReader = new AsisReader(new FileReader(asis.toFile()));
-				FindLineRaf inputRaf = new FindLineRaf(request.toFile(), "r");
-				TobeBufferedWriter tobeWriter = new TobeBufferedWriter(new FileWriter(tobe.toFile()))) {
+		public InputRaf(File file, String mode) throws FileNotFoundException {
+			super(file, mode);
+		}
 
-			asisReader.moveNextLine();
-			inputRaf.moveNextLine();
+		public String next() throws IOException {
+			lineNum++;
+			return lineVal = readLine();
+		}
+
+		public int offsetOfSame(String finding) throws IOException {
+			if (finding.equals(lineVal)) {
+				return 0;
+			}
+			long mark = getFilePointer();
+			try {
+				String line;
+				int offset = 0;
+				while ((line = readLine()) != null) {
+					offset++;
+					if (finding.equals(line)) {
+						return offset;
+					}
+				}
+			} finally {
+				seek(mark);
+			}
+			return -1;
+		}
+
+		public int offsetOfModify(String finding) throws IOException {
+			if (isModified(lineVal, finding)) {
+				return 0;
+			}
+			long mark = getFilePointer();
+			try {
+				String line;
+				int offset = 0;
+				while ((line = readLine()) != null) {
+					offset++;
+					if (isModified(finding, line)) {
+						return offset;
+					}
+				}
+			} finally {
+				seek(mark);
+			}
+			return -1;
+		}
+
+		private boolean isModified(String finding, String line) {
+			// TODO Auto-generated method stub
+			return false;
+		}
+
+		public String getLine() {
+			return lineVal;
+		}
+
+	}
+
+	public static class TobeWriter extends BufferedWriter {
+
+		public TobeWriter(Writer out) {
+			super(out);
+		}
+
+		String type;
+		int startLineNumber;
+		List<String> lines = new LinkedList<>();
+
+		public void save(int endLineNumber) throws IOException {
+			if ("ADD".equals(type)) {
+				write(startLineNumber + "#ADD");
+				newLine();
+				for (String l : lines) {
+					write(l);
+					newLine();
+				}
+				lines.clear();
+			} else if ("DELETE".equals(type)) {
+				write(startLineNumber + "~" + endLineNumber + "#DELETE");
+				newLine();
+			} else if ("MODIFY".equals(type)) {
+				write(startLineNumber + "~" + endLineNumber + "#MODIFY");
+				newLine();
+				for (String l : lines) {
+					write(l);
+					newLine();
+				}
+				lines.clear();
+			} else if ("SAME".equals(type)) {
+			}
+		}
+
+		public void onAdd(int lineNum, String lineVal) throws IOException {
+			if (!"ADD".equals(type)) {
+				save(lineNum - 1);
+				type = "ADD";
+				startLineNumber = lineNum;
+			}
+			lines.add(lineVal);
+		}
+
+		public void onDelete(int lineNum) throws IOException {
+			if (!"DELETE".equals(type)) {
+				save(lineNum - 1);
+				type = "DELETE";
+				startLineNumber = lineNum;
+			}
+		}
+
+		public void onModify(int lineNum, String lineVal) throws IOException {
+			if (!"MODIFY".equals(type)) {
+				save(lineNum - 1);
+				type = "MODIFY";
+				startLineNumber = lineNum;
+			}
+			lines.add(lineVal);
+		}
+
+		public void onSame(int lineNum) throws IOException {
+			if (!"SAME".equals(type)) {
+				save(lineNum - 1);
+				type = "SAME";
+				startLineNumber = lineNum;
+			}
+		}
+
+	}
+
+	private static Path commit1(Path svnFilePath, Path inputFilePath) throws FileNotFoundException, IOException {
+
+		String[] svnFileElements = svnFilePath.getFileName().toString().split("_");
+		Path tobePath = svnFilePath.getParent()
+				.resolve((Integer.parseInt(svnFileElements[0]) + 1) + svnFileElements[1]);
+
+		try (AsisReader asis = new AsisReader(new FileReader(svnFilePath.toFile()));
+				InputRaf input = new InputRaf(inputFilePath.toFile(), "r");
+				TobeWriter tobe = new TobeWriter(new FileWriter(tobePath.toFile()))) {
+
+			asis.next();
+			input.next();
 
 			while (true) {
-				if (asisReader.pos.line == null) {
-					if (inputRaf.pos.line == null) {
+				if (asis.getLine() == null) {
+					if (input.getLine() == null) {
 						break;
 					} else {
-						tobeWriter.writeAdd(asisReader.pos.lineNumber, inputRaf.pos.line);
-						inputRaf.moveNextLine();
+						tobe.onAdd(asis.getLineNumber(), input.getLine());
+						input.next();
 					}
 				} else {
-					if (inputRaf.pos.line == null) {
-						tobeWriter.writeDelete(asisReader.pos.lineNumber);
-						asisReader.moveNextLine();
+					if (input.getLine() == null) {
+						tobe.onDelete(asis.getLineNumber());
+						asis.next();
 					} else {
-						int offsetOfSame = inputRaf.offsetOfSame(asisReader.pos.line);
+						int offsetOfSame = input.offsetOfSame(asis.getLine());
 						if (offsetOfSame >= 0) {
 							for (int i = 0; i < offsetOfSame; i++) {
-								tobeWriter.writeAdd(asisReader.pos.lineNumber, inputRaf.pos.line);
-								inputRaf.moveNextLine();
+								tobe.onAdd(asis.getLineNumber(), input.getLine());
+								input.next();
 							}
-							asisReader.moveNextLine();
-							inputRaf.moveNextLine();
+							tobe.onSame(asis.getLineNumber());
+							asis.next();
+							input.next();
 						} else {
-							int offsetOfModify = inputRaf.offsetOfModify(asisReader.pos.line);
+							int offsetOfModify = input.offsetOfModify(asis.getLine());
 							if (offsetOfModify >= 0) {
-								for (int i = 0; i < offsetOfSame; i++) {
-									tobeWriter.writeAdd(asisReader.pos.lineNumber, inputRaf.pos.line);
-									inputRaf.moveNextLine();
+								for (int i = 0; i < offsetOfModify; i++) {
+									tobe.onAdd(asis.getLineNumber(), input.getLine());
+									input.next();
 								}
-								tobeWriter.writeModify(asisReader.pos.lineNumber, inputRaf.pos.line);
-								asisReader.moveNextLine();
-								inputRaf.moveNextLine();
+								tobe.onModify(asis.getLineNumber(), input.getLine());
+								asis.next();
+								input.next();
 							} else {
-								tobeWriter.writeDelete(asisReader.pos.lineNumber);
-								asisReader.moveNextLine();
+								tobe.onDelete(asis.getLineNumber());
+								asis.next();
 							}
 						}
 					}
 				}
 			}
+			tobe.save(asis.getLineNumber());
 		}
 
-		return tobe;
+		return tobePath;
+	}
+
+	public static class LineNumberList extends LinkedList<String> {
+
+		/**
+		 * 
+		 */
+		private static final long serialVersionUID = 1L;
+
+		public LineNumberList(Collection<String> c) {
+			super(c);
+		}
+
+		int lineNumber = -1;
+
+		public int getLineNumber() {
+			return lineNumber;
+		}
+
+		public void next() {
+			lineNumber++;
+		}
+
+		public String getLine() {
+			return lineNumber >= size() ? null : get(lineNumber);
+		}
+
+		public int offsetOfSame(String finding) {
+			if (finding.equals(get(lineNumber))) {
+				return 0;
+			}
+			long mark = lineNumber;
+			try {
+				int offset = 0;
+				for (int i = (int) (mark + 1); i < size(); i++) {
+					offset++;
+					if (finding.equals(get(i))) {
+						return offset;
+					}
+				}
+			} finally {
+				lineNumber = (int) mark;
+			}
+			return -1;
+		}
+
+		public int offsetOfModify(String finding) {
+			if (finding.equals(get(lineNumber))) {
+				return 0;
+			}
+			long mark = lineNumber;
+			try {
+				int offset = 0;
+				for (int i = (int) (mark + 1); i < size(); i++) {
+					offset++;
+					if (isModified(finding, get(i))) {
+						return offset;
+					}
+				}
+			} finally {
+				lineNumber = (int) mark;
+			}
+			return -1;
+		}
+
+		private boolean isModified(String finding, String line) {
+			// TODO Auto-generated method stub
+			return false;
+		}
+	}
+
+	private static Path commit2(Path svnFilePath, Path inputFilePath) throws FileNotFoundException, IOException {
+
+		LineNumberList asis = new LineNumberList(Files.readAllLines(svnFilePath));
+		LineNumberList input = new LineNumberList(Files.readAllLines(inputFilePath));
+
+		String[] svnFileElements = svnFilePath.getFileName().toString().split("_");
+		Path tobePath = svnFilePath.getParent()
+				.resolve((Integer.parseInt(svnFileElements[0]) + 1) + svnFileElements[1]);
+
+		try (TobeWriter tobe = new TobeWriter(new FileWriter(tobePath.toFile()))) {
+
+			asis.next();
+			input.next();
+
+			while (true) {
+				if (asis.getLine() == null) {
+					if (input.getLine() == null) {
+						break;
+					} else {
+						tobe.onAdd(asis.getLineNumber(), input.getLine());
+						input.next();
+					}
+				} else {
+					if (input.getLine() == null) {
+						tobe.onDelete(asis.getLineNumber());
+						asis.next();
+					} else {
+						int offsetOfSame = input.offsetOfSame(asis.getLine());
+						if (offsetOfSame >= 0) {
+							for (int i = 0; i < offsetOfSame; i++) {
+								tobe.onAdd(asis.getLineNumber(), input.getLine());
+								input.next();
+							}
+							tobe.onSame(asis.getLineNumber());
+							asis.next();
+							input.next();
+						} else {
+							int offsetOfModify = input.offsetOfModify(asis.getLine());
+							if (offsetOfModify >= 0) {
+								for (int i = 0; i < offsetOfModify; i++) {
+									tobe.onAdd(asis.getLineNumber(), input.getLine());
+									input.next();
+								}
+								tobe.onModify(asis.getLineNumber(), input.getLine());
+								asis.next();
+								input.next();
+							} else {
+								tobe.onDelete(asis.getLineNumber());
+								asis.next();
+							}
+						}
+					}
+				}
+			}
+			tobe.save(asis.getLineNumber());
+		}
+
+		return tobePath;
 	}
 }

@@ -19,10 +19,8 @@ import java.util.List;
 public class SvnServerForBigFile {
 
 	public static void main(String[] args) throws FileNotFoundException, IOException {
-		Path svnFilePath = Paths.get(
-				".\\resource\\practice\\svn\\server\\root\\d1\\1_a.txt");
-		Path inputFilePath = Paths
-				.get(".\\resource\\practice\\svn\\client\\a.txt");
+		Path svnFilePath = Paths.get(".\\resource\\practice\\svn\\server\\root\\d1\\1_a.txt");
+		Path inputFilePath = Paths.get(".\\resource\\practice\\svn\\client\\a.txt");
 		Files.readAllLines(commit(svnFilePath, inputFilePath)).forEach((l) -> {
 			System.out.println(l);
 		});
@@ -60,19 +58,16 @@ public class SvnServerForBigFile {
 		}
 
 		public int offsetOfSame(String finding) throws IOException {
-			if (finding.equals(lineVal)) {
-				return 0;
-			}
 			long mark = getFilePointer();
 			try {
-				String line;
+				String line = lineVal;
 				int offset = 0;
-				while ((line = readLine()) != null) {
-					offset++;
+				do {
 					if (finding.equals(line)) {
 						return offset;
 					}
-				}
+					offset++;
+				} while ((line = readLine()) != null);
 			} finally {
 				seek(mark);
 			}
@@ -80,19 +75,16 @@ public class SvnServerForBigFile {
 		}
 
 		public int offsetOfModify(String finding) throws IOException {
-			if (isModified(lineVal, finding)) {
-				return 0;
-			}
 			long mark = getFilePointer();
 			try {
-				String line;
+				String line = lineVal;
 				int offset = 0;
-				while ((line = readLine()) != null) {
-					offset++;
+				do {
 					if (isModified(finding, line)) {
 						return offset;
 					}
-				}
+					offset++;
+				} while ((line = readLine()) != null);
 			} finally {
 				seek(mark);
 			}
@@ -144,47 +136,38 @@ public class SvnServerForBigFile {
 			}
 		}
 
-		public void onAdd(int lineNum, String lineVal) throws IOException {
-			if (!"ADD".equals(type)) {
+		private void setType(String type, int lineNum) throws IOException {
+			if (!type.equals(this.type)) {
 				save(lineNum - 1);
-				type = "ADD";
+				this.type = type;
 				startLineNumber = lineNum;
 			}
+		}
+
+		public void onAdd(int lineNum, String lineVal) throws IOException {
+			setType("ADD", lineNum);
 			lines.add(lineVal);
 		}
 
 		public void onDelete(int lineNum) throws IOException {
-			if (!"DELETE".equals(type)) {
-				save(lineNum - 1);
-				type = "DELETE";
-				startLineNumber = lineNum;
-			}
+			setType("DELETE", lineNum);
 		}
 
 		public void onModify(int lineNum, String lineVal) throws IOException {
-			if (!"MODIFY".equals(type)) {
-				save(lineNum - 1);
-				type = "MODIFY";
-				startLineNumber = lineNum;
-			}
+			setType("MODIFY", lineNum);
 			lines.add(lineVal);
 		}
 
 		public void onSame(int lineNum) throws IOException {
-			if (!"SAME".equals(type)) {
-				save(lineNum - 1);
-				type = "SAME";
-				startLineNumber = lineNum;
-			}
+			setType("SAME", lineNum);
 		}
-
 	}
 
 	private static Path commit(Path svnFilePath, Path inputFilePath) throws FileNotFoundException, IOException {
 
 		String[] svnFileElements = svnFilePath.getFileName().toString().split("_");
 		Path tobePath = svnFilePath.getParent()
-				.resolve((Integer.parseInt(svnFileElements[0]) + 1) + svnFileElements[1]);
+				.resolve((Integer.parseInt(svnFileElements[0]) + 1) + "_" + svnFileElements[1]);
 
 		try (AsisReader asis = new AsisReader(new FileReader(svnFilePath.toFile()));
 				InputRaf input = new InputRaf(inputFilePath.toFile(), "r");

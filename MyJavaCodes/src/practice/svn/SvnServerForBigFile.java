@@ -1,14 +1,11 @@
 package practice.svn;
 
-import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.io.RandomAccessFile;
 import java.io.Reader;
@@ -16,21 +13,17 @@ import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 
-public class SvnServer {
+public class SvnServerForBigFile {
 
 	public static void main(String[] args) throws FileNotFoundException, IOException {
 		Path svnFilePath = Paths.get(
-				"C:\\ljg\\eclipse\\ws\\git\\repo1\\MyJavaCodes\\resource\\practice\\svn\\server\\root\\d1\\1_a.txt");
+				".\\resource\\practice\\svn\\server\\root\\d1\\1_a.txt");
 		Path inputFilePath = Paths
-				.get("C:\\ljg\\eclipse\\ws\\git\\repo1\\MyJavaCodes\\resource\\practice\\svn\\client\\a.txt");
-//		Files.readAllLines(commit1(svnFilePath, inputFilePath)).forEach((l) -> {
-//			System.out.println(l);
-//		});
-		Files.readAllLines(commit2(svnFilePath, inputFilePath)).forEach((l) -> {
+				.get(".\\resource\\practice\\svn\\client\\a.txt");
+		Files.readAllLines(commit(svnFilePath, inputFilePath)).forEach((l) -> {
 			System.out.println(l);
 		});
 	}
@@ -187,7 +180,7 @@ public class SvnServer {
 
 	}
 
-	private static Path commit1(Path svnFilePath, Path inputFilePath) throws FileNotFoundException, IOException {
+	private static Path commit(Path svnFilePath, Path inputFilePath) throws FileNotFoundException, IOException {
 
 		String[] svnFileElements = svnFilePath.getFileName().toString().split("_");
 		Path tobePath = svnFilePath.getParent()
@@ -242,136 +235,6 @@ public class SvnServer {
 			}
 			tobe.save(asis.getLineNumber());
 		}
-
-		return tobePath;
-	}
-
-	public static class LineNumberList extends LinkedList<String> {
-
-		/**
-		 * 
-		 */
-		private static final long serialVersionUID = 1L;
-
-		public LineNumberList(Collection<String> c) {
-			super(c);
-		}
-
-		int lineNumber = -1;
-
-		public int getLineNumber() {
-			return lineNumber;
-		}
-
-		public void next() {
-			lineNumber++;
-		}
-
-		public String getLine() {
-			return lineNumber >= size() ? null : get(lineNumber);
-		}
-
-		public int offsetOfSame(String finding) {
-			if (finding.equals(get(lineNumber))) {
-				return 0;
-			}
-			long mark = lineNumber;
-			try {
-				int offset = 0;
-				for (int i = (int) (mark + 1); i < size(); i++) {
-					offset++;
-					if (finding.equals(get(i))) {
-						return offset;
-					}
-				}
-			} finally {
-				lineNumber = (int) mark;
-			}
-			return -1;
-		}
-
-		public int offsetOfModify(String finding) {
-			if (finding.equals(get(lineNumber))) {
-				return 0;
-			}
-			long mark = lineNumber;
-			try {
-				int offset = 0;
-				for (int i = (int) (mark + 1); i < size(); i++) {
-					offset++;
-					if (isModified(finding, get(i))) {
-						return offset;
-					}
-				}
-			} finally {
-				lineNumber = (int) mark;
-			}
-			return -1;
-		}
-
-		private boolean isModified(String finding, String line) {
-			// TODO Auto-generated method stub
-			return false;
-		}
-	}
-
-	private static Path commit2(Path svnFilePath, Path inputFilePath) throws FileNotFoundException, IOException {
-
-		LineNumberList asis = new LineNumberList(Files.readAllLines(svnFilePath));
-		LineNumberList input = new LineNumberList(Files.readAllLines(inputFilePath));
-
-		String[] svnFileElements = svnFilePath.getFileName().toString().split("_");
-		Path tobePath = svnFilePath.getParent()
-				.resolve((Integer.parseInt(svnFileElements[0]) + 1) + svnFileElements[1]);
-
-		try (TobeWriter tobe = new TobeWriter(new FileWriter(tobePath.toFile()))) {
-
-			asis.next();
-			input.next();
-
-			while (true) {
-				if (asis.getLine() == null) {
-					if (input.getLine() == null) {
-						break;
-					} else {
-						tobe.onAdd(asis.getLineNumber(), input.getLine());
-						input.next();
-					}
-				} else {
-					if (input.getLine() == null) {
-						tobe.onDelete(asis.getLineNumber());
-						asis.next();
-					} else {
-						int offsetOfSame = input.offsetOfSame(asis.getLine());
-						if (offsetOfSame >= 0) {
-							for (int i = 0; i < offsetOfSame; i++) {
-								tobe.onAdd(asis.getLineNumber(), input.getLine());
-								input.next();
-							}
-							tobe.onSame(asis.getLineNumber());
-							asis.next();
-							input.next();
-						} else {
-							int offsetOfModify = input.offsetOfModify(asis.getLine());
-							if (offsetOfModify >= 0) {
-								for (int i = 0; i < offsetOfModify; i++) {
-									tobe.onAdd(asis.getLineNumber(), input.getLine());
-									input.next();
-								}
-								tobe.onModify(asis.getLineNumber(), input.getLine());
-								asis.next();
-								input.next();
-							} else {
-								tobe.onDelete(asis.getLineNumber());
-								asis.next();
-							}
-						}
-					}
-				}
-			}
-			tobe.save(asis.getLineNumber());
-		}
-
 		return tobePath;
 	}
 }

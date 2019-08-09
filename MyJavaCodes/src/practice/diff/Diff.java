@@ -5,11 +5,13 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Stack;
+import java.util.stream.Stream;
 
 public class Diff {
 
@@ -76,25 +78,10 @@ public class Diff {
 	private static boolean isSame(File lf, File rf, Map<File, Boolean> fileSameMap)
 			throws FileNotFoundException, IOException {
 		if (lf.isDirectory()) {
-			File[] lChilds = lf.listFiles();
-			File[] rChilds = rf.listFiles();
-			if (lChilds.length == rChilds.length) {
-				for (File f : lChilds) {
-					Boolean isChildSame = fileSameMap.get(f);
-					if (isChildSame == null || !isChildSame) {
-						return false;
-					}
-				}
-				for (File f : rChilds) {
-					Boolean isChildSame = fileSameMap.get(f);
-					if (isChildSame == null || !isChildSame) {
-						return false;
-					}
-				}
-				return true;
-			} else {
-				return false;
-			}
+			return Stream.concat(Arrays.stream(lf.listFiles()), Arrays.stream(rf.listFiles())).filter((f) -> {
+				Boolean isChildSame = fileSameMap.get(f);
+				return isChildSame == null || !isChildSame;
+			}).count() == 0;
 		} else {
 			if (lf.length() != rf.length()) {
 				return false;
@@ -109,20 +96,7 @@ public class Diff {
 	}
 
 	private static boolean isSameContent(File lf, File rf) throws FileNotFoundException, IOException {
-		try (BufferedInputStream lBis = new BufferedInputStream(new FileInputStream(lf));
-				BufferedInputStream rBis = new BufferedInputStream(new FileInputStream(rf))) {
-			while (true) {
-				int l = lBis.read();
-				int r = rBis.read();
-				if (l != r) {
-					return false;
-				}
-				if (l == -1) {
-					break;
-				}
-			}
-		}
-		return true;
+		return Arrays.equals(Files.readAllBytes(lf.toPath()), Files.readAllBytes(rf.toPath()));
 	}
 
 	private static File next(Stack<File> stack, Map<File, Boolean> fileSameMap) {
@@ -130,21 +104,21 @@ public class Diff {
 			return null;
 		}
 		while (true) {
-			File n = stack.pop();
-			if (n.isDirectory()) {
-				File[] childs = n.listFiles();
+			File f = stack.pop();
+			if (f.isDirectory()) {
+				File[] childs = f.listFiles();
 				if (childs.length == 0) {
-					return n;
+					return f;
 				}
 				if (fileSameMap.containsKey(childs[0])) {
-					return n;
+					return f;
 				} else {
-					stack.push(n);
+					stack.push(f);
 					Arrays.sort(childs);
 					stack.addAll(Arrays.asList(childs));
 				}
 			} else {
-				return n;
+				return f;
 			}
 		}
 	}
@@ -164,7 +138,7 @@ public class Diff {
 		if (compared > 0) {
 			return true;
 		}
-		if (compared == 0 && lf.isDirectory() && !rf.isDirectory()) {
+		if (compared == 0 && lf.isDirectory() != rf.isDirectory()) {
 			return true;
 		}
 		return false;

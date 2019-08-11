@@ -1,6 +1,9 @@
 package practice.svn;
 
+import java.io.Closeable;
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -21,13 +24,11 @@ public class SvnServerForSpeed {
 
 		Path inputPath = Paths.get(".\\resource\\practice\\svn\\client\\a.txt");
 
-		// asis, tobe, input 을 list 로 변환한다
+		// asis, input 을 list 로 변환한다
 		NumberList asis = new NumberList();
 		Files.readAllLines(asisPath).forEach((line) -> {
 			asis.list.add(line);
 		});
-
-		TobeList tobe = new TobeList();
 
 		NumberList input = new NumberList();
 		Files.readAllLines(inputPath).forEach((line) -> {
@@ -35,7 +36,7 @@ public class SvnServerForSpeed {
 		});
 
 		// asis, input 으로 tobe 를 구한다
-		commit(asis, input, tobe);
+		TobeList tobe = commit(asis, input);
 
 		// tobe 결과를 출력한다
 		Files.write(tobePath, tobe.list, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
@@ -45,56 +46,57 @@ public class SvnServerForSpeed {
 		});
 	}
 
-	private static void commit(NumberList asis, NumberList input, TobeList tobe) throws IOException {
+	private static TobeList commit(NumberList asis, NumberList input) throws IOException {
 
-		asis.next();
-		input.next();
+		try (TobeList tobe = new TobeList()) {
+			asis.next();
+			input.next();
 
-		while (true) {
-			if (asis.get() == null) {
-				if (input.get() == null) {
-					break;
-				} else {
-					tobe.onAdd(asis.lineNum, input.get());
-					input.next();
-				}
-			} else {
-				if (input.get() == null) {
-					tobe.onDelete(asis.lineNum);
-					asis.next();
-				} else {
-					int offsetOfSame = input.offsetOfSame(asis.get());
-					if (offsetOfSame >= 0) {
-						for (int i = 0; i < offsetOfSame; i++) {
-							tobe.onAdd(asis.lineNum, input.get());
-							input.next();
-						}
-						tobe.onSame(asis.lineNum);
-						asis.next();
-						input.next();
+			while (true) {
+				if (asis.get() == null) {
+					if (input.get() == null) {
+						break;
 					} else {
-						int offsetOfModify = input.offsetOfModify(asis.get());
-						if (offsetOfModify >= 0) {
-							for (int i = 0; i < offsetOfModify; i++) {
+						tobe.onAdd(asis.lineNum, input.get());
+						input.next();
+					}
+				} else {
+					if (input.get() == null) {
+						tobe.onDelete(asis.lineNum);
+						asis.next();
+					} else {
+						int offsetOfSame = input.offsetOfSame(asis.get());
+						if (offsetOfSame >= 0) {
+							for (int i = 0; i < offsetOfSame; i++) {
 								tobe.onAdd(asis.lineNum, input.get());
 								input.next();
 							}
-							tobe.onModify(asis.lineNum, input.get());
+							tobe.onSame(asis.lineNum);
 							asis.next();
 							input.next();
 						} else {
-							tobe.onDelete(asis.lineNum);
-							asis.next();
+							int offsetOfModify = input.offsetOfModify(asis.get());
+							if (offsetOfModify >= 0) {
+								for (int i = 0; i < offsetOfModify; i++) {
+									tobe.onAdd(asis.lineNum, input.get());
+									input.next();
+								}
+								tobe.onModify(asis.lineNum, input.get());
+								asis.next();
+								input.next();
+							} else {
+								tobe.onDelete(asis.lineNum);
+								asis.next();
+							}
 						}
 					}
 				}
 			}
+			return tobe;
 		}
-		tobe.save();
-
 	}
 
-	public static class TobeList {
+	public static class TobeList implements Closeable {
 
 		private List<String> list = new LinkedList<>();
 
@@ -110,7 +112,7 @@ public class SvnServerForSpeed {
 				inputs.clear();
 
 			} else if ("MODIFY".equals(type)) {
-				list.add(startOfType + "#MODIFY");
+				list.add(startOfType + "~" + currentOfType + "#MODIFY");
 				list.addAll(inputs);
 				inputs.clear();
 
@@ -148,6 +150,10 @@ public class SvnServerForSpeed {
 			setType(lineNum, "DELETE");
 		}
 
+		@Override
+		public void close() throws IOException {
+			save();
+		}
 	}
 
 	public static class NumberList {
@@ -174,7 +180,7 @@ public class SvnServerForSpeed {
 			int mark = lineNum;
 			try {
 				do {
-					if (isModified(find, get())) {
+					if (get() != null && isModified(find, get())) {
 						return offset;
 					}
 					offset++;
@@ -185,9 +191,23 @@ public class SvnServerForSpeed {
 			return -1;
 		}
 
-		private boolean isModified(String find, String string) {
-			// TODO Auto-generated method stub
-			return false;
+		private boolean isModified(String find, String line) {
+			int leftIdx = 0;
+			int rightIdx = 0;
+			int sameCnt = 0;
+			while (leftIdx < find.length() && rightIdx < line.length()) {
+				char left = find.charAt(leftIdx++);
+				int tmp = line.indexOf(left, rightIdx);
+				if (tmp >= 0) {
+					sameCnt++;
+					rightIdx = tmp + 1;
+				}
+			}
+			BigDecimal bd1 = new BigDecimal(find.length() + line.length());
+			BigDecimal bd2 = bd1.divide(new BigDecimal(2));
+			BigDecimal bd3 = new BigDecimal(sameCnt).divide(bd2, 2, RoundingMode.HALF_UP);
+			return bd3.doubleValue() >= 0.92D;
+//			return false;
 		}
 
 		public int offsetOfSame(String find) {

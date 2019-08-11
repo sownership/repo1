@@ -78,10 +78,10 @@ public class Diff {
 	private static boolean isSame(File lf, File rf, Map<File, Boolean> fileSameMap)
 			throws FileNotFoundException, IOException {
 		if (lf.isDirectory()) {
-			return Stream.concat(Arrays.stream(lf.listFiles()), Arrays.stream(rf.listFiles())).filter((f) -> {
+			return Stream.concat(Arrays.stream(lf.listFiles()), Arrays.stream(rf.listFiles())).anyMatch((f) -> {
 				Boolean isChildSame = fileSameMap.get(f);
 				return isChildSame == null || !isChildSame;
-			}).count() == 0;
+			});
 		} else {
 			if (lf.length() != rf.length()) {
 				return false;

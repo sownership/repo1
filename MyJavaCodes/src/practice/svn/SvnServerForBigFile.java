@@ -1,6 +1,8 @@
 package practice.svn;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.Closeable;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -10,6 +12,8 @@ import java.io.LineNumberReader;
 import java.io.RandomAccessFile;
 import java.io.Reader;
 import java.io.Writer;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -19,46 +23,52 @@ import java.util.List;
 public class SvnServerForBigFile {
 
 	public static void main(String[] args) throws FileNotFoundException, IOException {
+
 		Path svnFilePath = Paths.get(".\\resource\\practice\\svn\\server\\root\\d1\\1_a.txt");
 		Path inputFilePath = Paths.get(".\\resource\\practice\\svn\\client\\a.txt");
+
 		Files.readAllLines(commit(svnFilePath, inputFilePath)).forEach((l) -> {
 			System.out.println(l);
 		});
 	}
 
-	public static class AsisReader extends LineNumberReader {
+	public static class AsisReader implements Closeable {
 
-		String lineVal;
+		private BufferedReader reader;
+		private int lineNum = -1;
+		private String lineVal;
 
 		public AsisReader(Reader in) {
-			super(in);
+			reader = new BufferedReader(in);
 		}
 
-		public String next() throws IOException {
-			return lineVal = readLine();
+		public int next() throws IOException {
+			lineVal = reader.readLine();
+			return ++lineNum;
 		}
 
-		public String getLine() {
-			return lineVal;
+		@Override
+		public void close() throws IOException {
+			reader.close();
 		}
 	}
 
-	public static class InputRaf extends RandomAccessFile {
+	public static class InputFile implements Closeable {
 
-		String lineVal;
-		int lineNum;
+		private RandomAccessFile raf;
+		private String lineVal;
 
-		public InputRaf(File file, String mode) throws FileNotFoundException {
-			super(file, mode);
+		public InputFile(File file) throws FileNotFoundException {
+			raf = new RandomAccessFile(file, "r");
 		}
 
 		public String next() throws IOException {
-			lineNum++;
-			return lineVal = readLine();
+			lineVal = raf.readLine();
+			return lineVal;
 		}
 
 		public int offsetOfSame(String finding) throws IOException {
-			long mark = getFilePointer();
+			long mark = raf.getFilePointer();
 			try {
 				String line = lineVal;
 				int offset = 0;
@@ -67,15 +77,15 @@ public class SvnServerForBigFile {
 						return offset;
 					}
 					offset++;
-				} while ((line = readLine()) != null);
+				} while ((line = raf.readLine()) != null);
 			} finally {
-				seek(mark);
+				raf.seek(mark);
 			}
 			return -1;
 		}
 
 		public int offsetOfModify(String finding) throws IOException {
-			long mark = getFilePointer();
+			long mark = raf.getFilePointer();
 			try {
 				String line = lineVal;
 				int offset = 0;
@@ -84,20 +94,39 @@ public class SvnServerForBigFile {
 						return offset;
 					}
 					offset++;
-				} while ((line = readLine()) != null);
+				} while ((line = raf.readLine()) != null);
 			} finally {
-				seek(mark);
+				raf.seek(mark);
 			}
 			return -1;
 		}
 
 		private boolean isModified(String finding, String line) {
-			// TODO Auto-generated method stub
-			return false;
+			int idxL = 0;
+			int idxR = 0;
+			int sameCnt = 0;
+			char l;
+			while (idxL < finding.length() && idxR < line.length()) {
+				l = finding.charAt(idxL++);
+				int temp = line.indexOf(l, idxR);
+				if (temp >= 0) {
+					sameCnt++;
+					idxR = temp + 1;
+				}
+			}
+			BigDecimal bd1 = new BigDecimal(finding.length() + line.length());
+			BigDecimal bd2 = bd1.divide(new BigDecimal(2));
+			BigDecimal bd3 = new BigDecimal(sameCnt).divide(bd2, 2, RoundingMode.HALF_UP);
+			return bd3.doubleValue() >= 0.92D;
 		}
 
 		public String getLine() {
 			return lineVal;
+		}
+
+		@Override
+		public void close() throws IOException {
+			raf.close();
 		}
 
 	}
@@ -170,53 +199,53 @@ public class SvnServerForBigFile {
 				.resolve((Integer.parseInt(svnFileElements[0]) + 1) + "_" + svnFileElements[1]);
 
 		try (AsisReader asis = new AsisReader(new FileReader(svnFilePath.toFile()));
-				InputRaf input = new InputRaf(inputFilePath.toFile(), "r");
+				InputFile input = new InputFile(inputFilePath.toFile());
 				TobeWriter tobe = new TobeWriter(new FileWriter(tobePath.toFile()))) {
 
-			asis.next();
+			int asisLineNumber = asis.next();
 			input.next();
 
 			while (true) {
-				if (asis.getLine() == null) {
+				if (asis.lineVal == null) {
 					if (input.getLine() == null) {
 						break;
 					} else {
-						tobe.onAdd(asis.getLineNumber(), input.getLine());
+						tobe.onAdd(asisLineNumber, input.getLine());
 						input.next();
 					}
 				} else {
 					if (input.getLine() == null) {
-						tobe.onDelete(asis.getLineNumber());
-						asis.next();
+						tobe.onDelete(asisLineNumber);
+						asisLineNumber = asis.next();
 					} else {
-						int offsetOfSame = input.offsetOfSame(asis.getLine());
+						int offsetOfSame = input.offsetOfSame(asis.lineVal);
 						if (offsetOfSame >= 0) {
 							for (int i = 0; i < offsetOfSame; i++) {
-								tobe.onAdd(asis.getLineNumber(), input.getLine());
+								tobe.onAdd(asisLineNumber, input.getLine());
 								input.next();
 							}
-							tobe.onSame(asis.getLineNumber());
-							asis.next();
+							tobe.onSame(asisLineNumber);
+							asisLineNumber = asis.next();
 							input.next();
 						} else {
-							int offsetOfModify = input.offsetOfModify(asis.getLine());
+							int offsetOfModify = input.offsetOfModify(asis.lineVal);
 							if (offsetOfModify >= 0) {
 								for (int i = 0; i < offsetOfModify; i++) {
-									tobe.onAdd(asis.getLineNumber(), input.getLine());
+									tobe.onAdd(asisLineNumber, input.getLine());
 									input.next();
 								}
-								tobe.onModify(asis.getLineNumber(), input.getLine());
-								asis.next();
+								tobe.onModify(asisLineNumber, input.getLine());
+								asisLineNumber = asis.next();
 								input.next();
 							} else {
-								tobe.onDelete(asis.getLineNumber());
-								asis.next();
+								tobe.onDelete(asisLineNumber);
+								asisLineNumber = asis.next();
 							}
 						}
 					}
 				}
 			}
-			tobe.save(asis.getLineNumber());
+			tobe.save(asisLineNumber);
 		}
 		return tobePath;
 	}

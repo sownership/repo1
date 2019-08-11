@@ -67,9 +67,9 @@ public class Diff2 {
 								if (lChilds.length != rChilds.length) {
 									System.out.println("D:" + lFullPath + ", " + rFullPath);
 								} else {
-									if (Stream.concat(Arrays.stream(lChilds), Arrays.stream(rChilds)).filter((f) -> {
+									if (Stream.concat(Arrays.stream(lChilds), Arrays.stream(rChilds)).anyMatch((f) -> {
 										return !sames.contains(f.toPath());
-									}).count() > 0) {
+									})) {
 										System.out.println("D:" + lFullPath + ", " + rFullPath);
 									} else {
 										System.out.println("E:" + lFullPath + ", " + rFullPath);

@@ -10,144 +10,136 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class SvnServerForSpeed {
-
 	public static void main(String[] args) throws IOException {
 
-		// asis, tobe, input 의 경로를 구한다.
 		Path asisPath = Paths.get(".\\resource\\practice\\svn\\server\\root\\d1\\1_a.txt");
-
-		String[] asisNameElements = asisPath.getFileName().toString().split("_");
-		String tobeName = (Integer.parseInt(asisNameElements[0]) + 1) + "_" + asisNameElements[1];
-		Path tobePath = Paths.get(".\\resource\\practice\\svn\\server\\root\\d1", tobeName);
-
 		Path inputPath = Paths.get(".\\resource\\practice\\svn\\client\\a.txt");
+		String[] asisNameEles = asisPath.toFile().getName().split("_");
+		Path tobePath = asisPath.resolveSibling((Integer.parseInt(asisNameEles[0]) + 1) + "_" + asisNameEles[1]);
 
-		// asis, input 을 list 로 변환한다
-		NumberList asis = new NumberList();
-		Files.readAllLines(asisPath).forEach((line) -> {
-			asis.list.add(line);
-		});
+		LineNumberList asis = new LineNumberList(Files.readAllLines(asisPath));
+		LineNumberList input = new LineNumberList(Files.readAllLines(inputPath));
 
-		NumberList input = new NumberList();
-		Files.readAllLines(inputPath).forEach((line) -> {
-			input.list.add(line);
-		});
+		List<String> tobe = commit(asis, input);
 
-		// asis, input 으로 tobe 를 구한다
-		TobeList tobe = commit(asis, input);
+		Files.write(tobePath, tobe, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
 
-		// tobe 결과를 출력한다
-		Files.write(tobePath, tobe.list, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-
-		tobe.list.forEach((l) -> {
-			System.out.println(l);
-		});
+		tobe.forEach(System.out::println);
 	}
 
-	private static TobeList commit(NumberList asis, NumberList input) throws IOException {
+	static class LineNumberList {
+		private List<String> lines;
 
-		try (TobeList tobe = new TobeList()) {
-			asis.next();
-			input.next();
+		LineNumberList(List<String> lines) {
+			this.lines = lines;
+		}
 
-			while (true) {
-				if (asis.get() == null) {
-					if (input.get() == null) {
-						break;
-					} else {
-						tobe.onAdd(asis.lineNum, input.get());
-						input.next();
-					}
-				} else {
-					if (input.get() == null) {
-						tobe.onDelete(asis.lineNum);
-						asis.next();
-					} else {
-						int offsetOfSame = input.offsetOfSame(asis.get());
-						if (offsetOfSame >= 0) {
-							for (int i = 0; i < offsetOfSame; i++) {
-								tobe.onAdd(asis.lineNum, input.get());
-								input.next();
-							}
-							tobe.onSame(asis.lineNum);
-							asis.next();
-							input.next();
-						} else {
-							int offsetOfModify = input.offsetOfModify(asis.get());
-							if (offsetOfModify >= 0) {
-								for (int i = 0; i < offsetOfModify; i++) {
-									tobe.onAdd(asis.lineNum, input.get());
-									input.next();
-								}
-								tobe.onModify(asis.lineNum, input.get());
-								asis.next();
-								input.next();
-							} else {
-								tobe.onDelete(asis.lineNum);
-								asis.next();
-							}
-						}
-					}
+		int lineNum = -1;
+
+		String get() {
+			return lineNum >= lines.size() ? null : lines.get(lineNum);
+		}
+
+		String next() {
+			if (lineNum < lines.size()) {
+				lineNum++;
+			}
+			return get();
+		}
+
+		private int offsetOfModify(String asisLine) {
+			for (int i = lineNum; i < lines.size(); i++) {
+				if (isModified(asisLine, lines.get(i))) {
+					return i - lineNum;
 				}
 			}
-			return tobe;
+			return -1;
+		}
+
+		private boolean isModified(String asisLine, String inputLine) {
+
+			AtomicInteger sameCnt = new AtomicInteger(0);
+			AtomicInteger inputIndex = new AtomicInteger(0);
+			asisLine.chars().forEach((c) -> {
+				int tmp = inputLine.indexOf(c, inputIndex.get());
+				if (tmp >= 0) {
+					sameCnt.incrementAndGet();
+					inputIndex.set(tmp + 1);
+				}
+			});
+			BigDecimal bd1 = new BigDecimal(asisLine.length() + inputLine.length());
+			BigDecimal bd2 = bd1.divide(new BigDecimal(2), 1);
+			BigDecimal bd3 = new BigDecimal(sameCnt.get());
+			return bd3.divide(bd2, 2, RoundingMode.HALF_UP).doubleValue() > 0.91D;
+		}
+
+		private int offsetOfSame(String asisLine) {
+			for (int i = lineNum; i < lines.size(); i++) {
+				if (lines.get(i).equals(asisLine)) {
+					return i - lineNum;
+				}
+			}
+			return -1;
 		}
 	}
 
-	public static class TobeList implements Closeable {
+	static class TobeList implements Closeable {
 
-		private List<String> list = new LinkedList<>();
+		private List<String> lines = new LinkedList<>();
 
-		String type;
-		List<String> inputs = new LinkedList<>();
-		int startOfType;
-		int currentOfType;
+		private String type;
+		private int startOfType;
+		private int endOfType;
+		private List<String> typeLines = new LinkedList<>();
 
-		public void save() {
-			if ("ADD".equals(type)) {
-				list.add(startOfType + "#ADD");
-				list.addAll(inputs);
-				inputs.clear();
-
-			} else if ("MODIFY".equals(type)) {
-				list.add(startOfType + "~" + currentOfType + "#MODIFY");
-				list.addAll(inputs);
-				inputs.clear();
-
-			} else if ("SAME".equals(type)) {
-
-			} else if ("DELETE".equals(type)) {
-				list.add(startOfType + "~" + currentOfType + "#DELETE");
-			}
+		private void onModify(int asisIndex, String inputLine) {
+			checkAndReset("MODIFY", asisIndex);
+			typeLines.add(inputLine);
 		}
 
-		private void setType(int lineNum, String type) {
-			if (!type.equals(this.type)) {
+		private void onSame(int asisIndex) {
+			checkAndReset("SAME", asisIndex);
+		}
+
+		private void onDelete(int asisIndex) {
+			checkAndReset("DELETE", asisIndex);
+		}
+
+		private void onAdd(int asisIndex, String inputLine) {
+			checkAndReset("ADD", asisIndex);
+			typeLines.add(inputLine);
+		}
+
+		private void checkAndReset(String mode, int asisIndex) {
+			if (!mode.equals(type)) {
 				save();
-				this.type = type;
-				startOfType = lineNum;
+				type = mode;
+				startOfType = asisIndex;
+				typeLines.clear();
 			}
-			currentOfType = lineNum;
+			endOfType = asisIndex;
 		}
 
-		public void onAdd(int lineNum, String input) {
-			setType(lineNum, "ADD");
-			inputs.add(input);
+		private void save() {
+			if ("ADD".equals(type)) {
+				lines.add(startOfType + "#ADD");
+				typeLines.forEach(lines::add);
+			} else if ("SAME".equals(type)) {
+			} else if ("DELETE".equals(type)) {
+				lines.add(startOfType + "~" + endOfType + "#DELETED");
+			} else if ("MODIFY".equals(type)) {
+				lines.add(startOfType + "~" + endOfType + "#MODIFY");
+				typeLines.forEach(lines::add);
+			}
 		}
 
-		public void onModify(int lineNum, String input) {
-			setType(lineNum, "MODIFY");
-			inputs.add(input);
-		}
-
-		public void onSame(int lineNum) {
-			setType(lineNum, "SAME");
-		}
-
-		public void onDelete(int lineNum) {
-			setType(lineNum, "DELETE");
+		@Override
+		public String toString() {
+			return "--------------------------" + System.lineSeparator() + super.toString() + System.lineSeparator()
+					+ typeLines + System.lineSeparator() + "--------------------------";
 		}
 
 		@Override
@@ -156,78 +148,53 @@ public class SvnServerForSpeed {
 		}
 	}
 
-	public static class NumberList {
+	private static List<String> commit(LineNumberList asis, LineNumberList input) throws IOException {
 
-		private List<String> list = new LinkedList<>();
+		try (TobeList tobe = new TobeList()) {
+			String asisLine = asis.next();
+			String inputLine = input.next();
 
-		@Override
-		public String toString() {
-			return "" + lineNum;
-		}
-
-		int lineNum = -1;
-
-		public boolean next() {
-			if (lineNum >= list.size()) {
-				return false;
-			}
-			lineNum++;
-			return true;
-		}
-
-		public int offsetOfModify(String find) {
-			int offset = 0;
-			int mark = lineNum;
-			try {
-				do {
-					if (get() != null && isModified(find, get())) {
-						return offset;
+			while (true) {
+				if (asisLine == null) {
+					if (inputLine == null) {
+						break;
+					} else {
+						tobe.onAdd(asis.lineNum, inputLine);
+						inputLine = input.next();
 					}
-					offset++;
-				} while (next());
-			} finally {
-				lineNum = mark;
-			}
-			return -1;
-		}
-
-		private boolean isModified(String find, String line) {
-			int leftIdx = 0;
-			int rightIdx = 0;
-			int sameCnt = 0;
-			while (leftIdx < find.length() && rightIdx < line.length()) {
-				char left = find.charAt(leftIdx++);
-				int tmp = line.indexOf(left, rightIdx);
-				if (tmp >= 0) {
-					sameCnt++;
-					rightIdx = tmp + 1;
+				} else {
+					if (inputLine == null) {
+						tobe.onDelete(asis.lineNum);
+						asisLine = asis.next();
+					} else {
+						int offsetOfSame = input.offsetOfSame(asisLine);
+						if (offsetOfSame >= 0) {
+							for (int i = 0; i < offsetOfSame; i++) {
+								tobe.onAdd(asis.lineNum, inputLine);
+								inputLine = input.next();
+							}
+							tobe.onSame(asis.lineNum);
+							asisLine = asis.next();
+							inputLine = input.next();
+						} else {
+							int offsetOfModify = input.offsetOfModify(asisLine);
+							if (offsetOfModify >= 0) {
+								for (int i = 0; i < offsetOfModify; i++) {
+									tobe.onAdd(asis.lineNum, inputLine);
+									inputLine = input.next();
+								}
+								tobe.onModify(asis.lineNum, inputLine);
+								asisLine = asis.next();
+								inputLine = input.next();
+							} else {
+								tobe.onDelete(asis.lineNum);
+								asisLine = asis.next();
+							}
+						}
+					}
 				}
 			}
-			BigDecimal bd1 = new BigDecimal(find.length() + line.length());
-			BigDecimal bd2 = bd1.divide(new BigDecimal(2));
-			BigDecimal bd3 = new BigDecimal(sameCnt).divide(bd2, 2, RoundingMode.HALF_UP);
-			return bd3.doubleValue() >= 0.92D;
-//			return false;
-		}
-
-		public int offsetOfSame(String find) {
-			int offset = 0;
-			int mark = lineNum;
-			try {
-				do {
-					if (find.equals(get())) {
-						return offset;
-					}
-					offset++;
-				} while (next());
-			} finally {
-				lineNum = mark;
-			}
-			return -1;
-		}
-
-		public String get() {
-			return lineNum >= list.size() ? null : list.get(lineNum);
+			return tobe.lines;
 		}
 	}
 }

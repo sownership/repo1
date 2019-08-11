@@ -7,9 +7,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -19,122 +21,135 @@ public class Diff2 {
 
 	public static void main(String[] args) throws IOException {
 
-		Path lRootPath = Paths.get(".\\resource\\practice\\diff\\SRCTOP");
-		Path rRootPath = Paths.get(".\\resource\\practice\\diff\\DESTOP\\SRCTOP");
+		Path leftRoot = Paths.get(".\\resource\\practice\\diff\\SRCTOP");
+		Path rightRoot = Paths.get(".\\resource\\practice\\diff\\DESTOP\\SRCTOP");
 
-		List<Path> lRelativePathOfChilds = getRelativePathOfChilds(lRootPath);
-		List<Path> rRelativePathOfChilds = getRelativePathOfChilds(rRootPath);
+		List<Path> leftChilds = getReverseOrderChilds(leftRoot);
+		List<Path> rightChilds = getReverseOrderChilds(rightRoot);
 
-		Collections.sort(lRelativePathOfChilds, Collections.reverseOrder());
-		Collections.sort(rRelativePathOfChilds, Collections.reverseOrder());
+		List<String> diffResult = diff(leftRoot, leftChilds, rightRoot, rightChilds);
 
-		NumberList lNumberList = new NumberList(lRelativePathOfChilds);
-		NumberList rNumberList = new NumberList(rRelativePathOfChilds);
+		Collections.reverse(diffResult);
+		diffResult.forEach(System.out::println);
+	}
 
-		Path lPath = lNumberList.next();
-		Path rPath = rNumberList.next();
+	private static List<String> diff(Path leftRoot, List<Path> leftChilds, Path rightRoot, List<Path> rightChilds)
+			throws IOException {
+		DiffResult diffResult = new DiffResult();
 
-		Set<Path> sames = new HashSet<>();
+		LineNumberList lefts = new LineNumberList(leftChilds);
+		LineNumberList rights = new LineNumberList(rightChilds);
+
+		Set<File> sameSet = new HashSet<>();
+
+		Path left = lefts.next();
+		Path right = rights.next();
 
 		while (true) {
-			if (lPath == null) {
-				if (rPath == null) {
+			if (left == null) {
+				if (right == null) {
 					break;
 				} else {
-					System.out.println("R:" + rRootPath.resolve(rPath));
-					rPath = rNumberList.next();
+					diffResult.onRightOnly(rightRoot.resolve(right));
+					right = rights.next();
 				}
 			} else {
-				if (rPath == null) {
-					System.out.println("L:" + lRootPath.resolve(lPath));
-					lPath = lNumberList.next();
+				if (right == null) {
+					diffResult.onLeftOnly(leftRoot.resolve(left));
+					left = lefts.next();
 				} else {
-					Path lFullPath = lRootPath.resolve(lPath);
-					Path rFullPath = rRootPath.resolve(rPath);
-
-					int comp = lPath.compareTo(rPath);
-					if (comp > 0) {
-						System.out.println("L:" + lFullPath);
-						lPath = lNumberList.next();
-					} else if (comp < 0) {
-						System.out.println("R:" + rFullPath);
-						rPath = rNumberList.next();
-					} else {
-						if (lFullPath.toFile().isDirectory()) {
-							if (rFullPath.toFile().isDirectory()) {
-								File[] lChilds = lFullPath.toFile().listFiles();
-								File[] rChilds = rFullPath.toFile().listFiles();
-								if (lChilds.length != rChilds.length) {
-									System.out.println("D:" + lFullPath + ", " + rFullPath);
-								} else {
-									if (Stream.concat(Arrays.stream(lChilds), Arrays.stream(rChilds)).anyMatch((f) -> {
-										return !sames.contains(f.toPath());
-									})) {
-										System.out.println("D:" + lFullPath + ", " + rFullPath);
-									} else {
-										System.out.println("E:" + lFullPath + ", " + rFullPath);
-									}
-								}
+					int compare = left.compareTo(right);
+					if (compare == 0) {
+						boolean isSame = false;
+						File leftFile = leftRoot.resolve(left).toFile();
+						File rightFile = rightRoot.resolve(right).toFile();
+						if (leftFile.isDirectory()) {
+							if (rightFile.isDirectory()) {
+								isSame = !Stream.concat(Arrays.stream(leftFile.listFiles()),
+										Arrays.stream(rightFile.listFiles())).anyMatch((f) -> {
+											return !sameSet.contains(f);
+										});
 							} else {
-								System.out.println("L:" + lFullPath);
-								System.out.println("R:" + rFullPath);
 							}
 						} else {
-							if (rFullPath.toFile().isDirectory()) {
-								System.out.println("L:" + lFullPath);
-								System.out.println("R:" + rFullPath);
+							if (rightFile.isDirectory()) {
 							} else {
-								if (lFullPath.toFile().length() != rFullPath.toFile().length()) {
-									System.out.println("D:" + lFullPath + ", " + rFullPath);
-								} else {
-									if (!Arrays.equals(Files.readAllBytes(lFullPath), Files.readAllBytes(rFullPath))) {
-										System.out.println("D:" + lFullPath + ", " + rFullPath);
-									} else {
-										sames.add(lFullPath);
-										sames.add(rFullPath);
-										System.out.println("E:" + lFullPath + ", " + rFullPath);
-									}
-								}
+								isSame = leftFile.length() == rightFile.length() && Arrays.equals(
+										Files.readAllBytes(leftFile.toPath()), Files.readAllBytes(rightFile.toPath()));
 							}
 						}
-						lPath = lNumberList.next();
-						rPath = rNumberList.next();
+						if (isSame) {
+							diffResult.onSame(leftRoot.resolve(left), rightRoot.resolve(right));
+							sameSet.add(leftFile);
+							sameSet.add(rightFile);
+						} else {
+							diffResult.onDifferent(leftRoot.resolve(left), rightRoot.resolve(right));
+						}
+						left = lefts.next();
+						right = rights.next();
+					} else if (compare < 0) {
+						diffResult.onRightOnly(rightRoot.resolve(right));
+						right = rights.next();
+					} else if (compare > 0) {
+						diffResult.onLeftOnly(leftRoot.resolve(left));
+						left = lefts.next();
 					}
 				}
 			}
 		}
+		return diffResult.list;
 	}
 
-	static class NumberList {
+	static class DiffResult {
+		List<String> list = new LinkedList<>();
 
-		List<Path> paths;
-		int lineNumber = -1;
-
-		public NumberList(List<Path> files) {
-			this.paths = files;
+		public void onRightOnly(Path right) {
+			list.add("R: " + right);
 		}
 
+		public void onSame(Path left, Path right) {
+			list.add("S: " + left + ", " + right);
+		}
+
+		public void onDifferent(Path left, Path right) {
+			list.add("D: " + left + ", " + right);
+		}
+
+		public void onLeftOnly(Path left) {
+			list.add("L: " + left);
+		}
+	}
+
+	static class LineNumberList {
+		List<Path> list;
+
+		LineNumberList(List<Path> list) {
+			this.list = list;
+		}
+
+		int lineNum = -1;
+
 		Path next() {
-			if (lineNumber < paths.size() - 1) {
-				return paths.get(++lineNumber);
+			if (lineNum < list.size() - 1) {
+				return list.get(++lineNum);
 			}
 			return null;
 		}
 	}
 
-	private static List<Path> getRelativePathOfChilds(Path rootPath) {
-		List<Path> tree = new LinkedList<>();
+	private static List<Path> getReverseOrderChilds(Path root) {
+		List<Path> childs = new LinkedList<>();
 
 		Queue<File> q = new LinkedBlockingQueue<>();
-		q.offer(rootPath.toFile());
+		q.offer(root.toFile());
 		while (!q.isEmpty()) {
 			File f = q.poll();
 			if (f.isDirectory()) {
-				q.addAll(Arrays.asList(f.listFiles()));
+				Arrays.stream(f.listFiles()).forEach(q::offer);
 			}
-			tree.add(rootPath.relativize(f.toPath()));
+			childs.add(root.relativize(f.toPath()));
 		}
-
-		return tree;
+		Collections.sort(childs, Collections.reverseOrder());
+		return childs;
 	}
 }

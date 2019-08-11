@@ -1,8 +1,6 @@
 package practice.diff;
 
-import java.io.BufferedInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -78,20 +76,13 @@ public class Diff {
 	private static boolean isSame(File lf, File rf, Map<File, Boolean> fileSameMap)
 			throws FileNotFoundException, IOException {
 		if (lf.isDirectory()) {
-			return Stream.concat(Arrays.stream(lf.listFiles()), Arrays.stream(rf.listFiles())).anyMatch((f) -> {
-				Boolean isChildSame = fileSameMap.get(f);
-				return isChildSame == null || !isChildSame;
-			});
+			return rf.isDirectory()
+					&& !Stream.concat(Arrays.stream(lf.listFiles()), Arrays.stream(rf.listFiles())).anyMatch((f) -> {
+						Boolean isChildSame = fileSameMap.get(f);
+						return isChildSame == null || !isChildSame;
+					});
 		} else {
-			if (lf.length() != rf.length()) {
-				return false;
-			} else {
-				if (isSameContent(lf, rf)) {
-					return true;
-				} else {
-					return false;
-				}
-			}
+			return !rf.isDirectory() && lf.length() == rf.length() && isSameContent(lf, rf);
 		}
 	}
 
@@ -136,9 +127,6 @@ public class Diff {
 		}
 		int compared = lf.toPath().relativize(Paths.get(lRoot)).compareTo(rf.toPath().relativize(Paths.get(rRoot)));
 		if (compared > 0) {
-			return true;
-		}
-		if (compared == 0 && lf.isDirectory() != rf.isDirectory()) {
 			return true;
 		}
 		return false;

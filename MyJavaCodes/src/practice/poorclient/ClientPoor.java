@@ -32,7 +32,7 @@ public class ClientPoor {
 					bOut.get(b, 0, b.length);
 					bos.write(b);
 					bos.flush();
-					sleep(100);
+					sleep(1000);
 				}
 			}
 

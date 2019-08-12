@@ -35,7 +35,7 @@ public class ServerForPoorClient {
 			byte[] b = new byte[1024 * 8];
 			int len;
 			while ((len = bis.read(b)) != -1) {
-				// System.out.println(bb + " " + len);
+				System.out.println(bb + " " + len);
 				bb.put(b, 0, len);
 				byte[] result = biz(bb);
 				if (result != null) {
@@ -113,8 +113,8 @@ public class ServerForPoorClient {
 		System.out.println(DatatypeConverter.printHexBinary(body));
 
 		bb.compact();
-		
-		//todo jgli whay 0x00?
+
+		// todo jgli whay 0x00?
 		return new byte[] { 0x00 };
 	}
 }

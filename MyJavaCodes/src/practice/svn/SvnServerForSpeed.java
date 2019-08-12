@@ -1,20 +1,37 @@
 package practice.svn;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.ByteArrayInputStream;
 import java.io.Closeable;
+import java.io.DataInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class SvnServerForSpeed {
 	public static void main(String[] args) throws IOException {
+		startServer();
 
+//		startConsole();
+	}
+
+	private static void startConsole() throws IOException {
 		Path asisPath = Paths.get(".\\resource\\practice\\svn\\server\\root\\d1\\1_a.txt");
 		Path inputPath = Paths.get(".\\resource\\practice\\svn\\client\\a.txt");
 		String[] asisNameEles = asisPath.toFile().getName().split("_");
@@ -28,6 +45,58 @@ public class SvnServerForSpeed {
 		Files.write(tobePath, tobe, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
 
 		tobe.forEach(System.out::println);
+	}
+
+	private static void startServer() throws IOException {
+		try (ServerSocket ss = new ServerSocket(10000)) {
+			while (true) {
+				Socket s = ss.accept();
+				Thread t = new Thread(() -> {
+
+					try (Socket cs = s; DataInputStream dis = new DataInputStream(cs.getInputStream())) {
+
+						String fileName = dis.readUTF();
+						long fileLen = dis.readLong();
+
+						Path repoPath = Paths.get(".\\resource\\practice\\svn\\server\\root\\d1");
+						Optional<Path> revision = Files.list(repoPath).filter((p) -> {
+							return p.getFileName().toString().matches("\\d_" + fileName);
+						}).sorted((a, b) -> {
+							return new Integer(a.getFileName().toString().split("_")[0])
+									.compareTo(Integer.parseInt(b.getFileName().toString().split("_")[0]));
+						}).findFirst();
+						Path asisPath = revision.isPresent() ? revision.get() : null;
+
+						Path tempPath = repoPath.resolveSibling(asisPath.getFileName().toString() + "_temp");
+						try (BufferedOutputStream bos = new BufferedOutputStream(
+								new FileOutputStream(tempPath.toFile()))) {
+							byte[] b = new byte[1024 * 8];
+							int len;
+							while ((len = dis.read(b)) != -1) {
+								bos.write(b, 0, len);
+							}
+						}
+						LineNumberList input = new LineNumberList(Files.readAllLines(tempPath));
+						Files.delete(tempPath);
+
+						String[] asisNameEles = asisPath.toFile().getName().split("_");
+						Path tobePath = asisPath
+								.resolveSibling((Integer.parseInt(asisNameEles[0]) + 1) + "_" + asisNameEles[1]);
+						LineNumberList asis = new LineNumberList(Files.readAllLines(asisPath));
+						List<String> tobe = commit(asis, input);
+
+						Files.write(tobePath, tobe, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+
+						tobe.forEach(System.out::println);
+
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				});
+				t.setDaemon(true);
+				t.start();
+			}
+		}
 	}
 
 	static class LineNumberList {

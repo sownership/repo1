@@ -19,6 +19,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
@@ -26,6 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class SvnServerForSpeed {
 	public static void main(String[] args) throws IOException {
+
 		startServer();
 
 //		startConsole();
@@ -59,23 +61,19 @@ public class SvnServerForSpeed {
 						long fileLen = dis.readLong();
 
 						Path repoPath = Paths.get(".\\resource\\practice\\svn\\server\\root\\d1");
-						Optional<Path> revision = Files.list(repoPath).filter((p) -> {
+						Optional<Path> recent = Files.list(repoPath).filter((p) -> {
 							return p.getFileName().toString().matches("\\d_" + fileName);
 						}).sorted((a, b) -> {
-							return new Integer(a.getFileName().toString().split("_")[0])
-									.compareTo(Integer.parseInt(b.getFileName().toString().split("_")[0]));
+							return new Integer(b.getFileName().toString().split("_")[0])
+									.compareTo(Integer.parseInt(a.getFileName().toString().split("_")[0]));
 						}).findFirst();
-						Path asisPath = revision.isPresent() ? revision.get() : null;
+						Path asisPath = recent.isPresent() ? recent.get() : null;
 
-						Path tempPath = repoPath.resolveSibling(asisPath.getFileName().toString() + "_temp");
-						try (BufferedOutputStream bos = new BufferedOutputStream(
-								new FileOutputStream(tempPath.toFile()))) {
-							byte[] b = new byte[1024 * 8];
-							int len;
-							while ((len = dis.read(b)) != -1) {
-								bos.write(b, 0, len);
-							}
-						}
+						Path tempPath = asisPath.resolveSibling(fileName + "_temp");
+						byte[] b = new byte[(int) fileLen];
+						dis.readFully(b);
+						Files.write(tempPath, b, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+
 						LineNumberList input = new LineNumberList(Files.readAllLines(tempPath));
 						Files.delete(tempPath);
 

@@ -1,35 +1,97 @@
 package practice.svn;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.ByteArrayInputStream;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.io.RandomAccessFile;
 import java.io.Reader;
 import java.io.Writer;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class SvnServerForBigFile {
 
-	public static void main(String[] args) throws FileNotFoundException, IOException {
+	public static void main(String[] args) throws FileNotFoundException, IOException, InterruptedException {
 
-		Path svnFilePath = Paths.get(".\\resource\\practice\\svn\\server\\root\\d1\\1_a.txt");
-		Path inputFilePath = Paths.get(".\\resource\\practice\\svn\\client\\a.txt");
+		startServer();
+		Thread.currentThread().join();
 
-		Files.readAllLines(commit(svnFilePath, inputFilePath)).forEach((l) -> {
-			System.out.println(l);
-		});
+//		Path svnFilePath = Paths.get(".\\resource\\practice\\svn\\server\\root\\d1\\1_a.txt");
+//		Path inputFilePath = Paths.get(".\\resource\\practice\\svn\\client\\a.txt");
+//
+//		Files.readAllLines(commit(svnFilePath, inputFilePath)).forEach((l) -> {
+//			System.out.println(l);
+//		});
+	}
+
+	private static void startServer() throws IOException {
+		try (ServerSocket ss = new ServerSocket(10000)) {
+			Socket s = ss.accept();
+			Thread t = new Thread(() -> {
+				try (BufferedInputStream bis = new BufferedInputStream(s.getInputStream())) {
+					ByteBuffer bb = ByteBuffer.allocate(1024 * 1024);
+					byte[] b = new byte[1024 * 8];
+					int len;
+					while ((len = bis.read(b)) != -1) {
+						bb.put(b, 0, len);
+					}
+					
+					bb.flip();
+					short fileNameLen = bb.getShort();
+					byte[] fileNameBa = new byte[fileNameLen];
+					bb.get(fileNameBa);
+					AtomicReference<String> fileNameRef = new AtomicReference<>();
+					fileNameRef.set(new String(fileNameBa));
+					long fileLen = bb.getLong();
+
+					Path svnDirPath = Paths.get(".\\resource\\practice\\svn\\server\\root\\d1");
+					Path tempPath = svnDirPath.resolve(fileNameRef.get() + "_temp");
+
+					byte[] fileBa = new byte[bb.limit() - bb.position()];
+					bb.get(fileBa);
+					Files.write(tempPath, fileBa, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+
+					Optional<Path> recent = Files.list(svnDirPath).filter((f) -> {
+						return f.getFileName().toString().matches("\\d+_" + fileNameRef.get());
+					}).sorted((p1, p2) -> {
+						return new Integer(p2.getFileName().toString().split("_")[0])
+								.compareTo(new Integer(p1.getFileName().toString().split("_")[0]));
+					}).findFirst();
+
+					Path tobePath = commit(recent.get(), tempPath);
+
+					Files.readAllLines(tobePath).stream().forEach(System.out::println);
+
+					Files.delete(tempPath);
+
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			});
+			t.setDaemon(true);
+			t.start();
+		}
 	}
 
 	public static class AsisReader implements Closeable {

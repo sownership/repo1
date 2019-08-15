@@ -7,33 +7,31 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
-import java.util.Queue;
 import java.util.Set;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class Diff2 {
 
 	public static void main(String[] args) throws IOException {
 
-		Path leftRoot = Paths.get(".\\resource\\practice\\diff\\SRCTOP");
-		Path rightRoot = Paths.get(".\\resource\\practice\\diff\\DESTOP\\SRCTOP");
+		Path lRoot = Paths.get(".\\resource\\practice\\diff\\SRCTOP");
+		Path rRoot = Paths.get(".\\resource\\practice\\diff\\DESTOP\\SRCTOP");
 
-		List<Path> leftChilds = getReverseOrderChilds(leftRoot);
-		List<Path> rightChilds = getReverseOrderChilds(rightRoot);
+		List<Path> lPaths = Files.walk(lRoot).sorted(Collections.reverseOrder()).map(p -> lRoot.relativize(p))
+				.collect(Collectors.toList());
+		List<Path> rPaths = Files.walk(rRoot).sorted(Collections.reverseOrder()).map(p -> rRoot.relativize(p))
+				.collect(Collectors.toList());
 
-		List<String> diffResult = diff(leftRoot, leftChilds, rightRoot, rightChilds);
+		LinkedList<String> diffResult = diff(lRoot, lPaths, rRoot, rPaths);
 
-		Collections.reverse(diffResult);
-		diffResult.forEach(System.out::println);
+		diffResult.descendingIterator().forEachRemaining(System.out::println);
 	}
 
-	private static List<String> diff(Path leftRoot, List<Path> leftChilds, Path rightRoot, List<Path> rightChilds)
+	private static LinkedList<String> diff(Path leftRoot, List<Path> leftChilds, Path rightRoot, List<Path> rightChilds)
 			throws IOException {
 		DiffResult diffResult = new DiffResult();
 
@@ -65,10 +63,10 @@ public class Diff2 {
 						File rightFile = rightRoot.resolve(right).toFile();
 						if (leftFile.isDirectory()) {
 							if (rightFile.isDirectory()) {
-								isSame = !Stream.concat(Arrays.stream(leftFile.listFiles()),
-										Arrays.stream(rightFile.listFiles())).anyMatch((f) -> {
-											return !sameSet.contains(f);
-										});
+								isSame = !Stream
+										.concat(Arrays.stream(leftFile.listFiles()),
+												Arrays.stream(rightFile.listFiles()))
+										.anyMatch(f -> !sameSet.contains(f));
 							} else {
 							}
 						} else {
@@ -101,7 +99,7 @@ public class Diff2 {
 	}
 
 	static class DiffResult {
-		List<String> list = new LinkedList<>();
+		LinkedList<String> list = new LinkedList<>();
 
 		public void onRightOnly(Path right) {
 			list.add("R: " + right);
@@ -135,21 +133,5 @@ public class Diff2 {
 			}
 			return null;
 		}
-	}
-
-	private static List<Path> getReverseOrderChilds(Path root) {
-		List<Path> childs = new LinkedList<>();
-
-		Queue<File> q = new LinkedBlockingQueue<>();
-		q.offer(root.toFile());
-		while (!q.isEmpty()) {
-			File f = q.poll();
-			if (f.isDirectory()) {
-				Arrays.stream(f.listFiles()).forEach(q::offer);
-			}
-			childs.add(root.relativize(f.toPath()));
-		}
-		Collections.sort(childs, Collections.reverseOrder());
-		return childs;
 	}
 }

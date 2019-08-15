@@ -56,7 +56,7 @@ public class SvnServerForBigFile {
 					while ((len = bis.read(b)) != -1) {
 						bb.put(b, 0, len);
 					}
-					
+
 					bb.flip();
 					short fileNameLen = bb.getShort();
 					byte[] fileNameBa = new byte[fileNameLen];
@@ -72,12 +72,11 @@ public class SvnServerForBigFile {
 					bb.get(fileBa);
 					Files.write(tempPath, fileBa, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
 
-					Optional<Path> recent = Files.list(svnDirPath).filter((f) -> {
-						return f.getFileName().toString().matches("\\d+_" + fileNameRef.get());
-					}).sorted((p1, p2) -> {
-						return new Integer(p2.getFileName().toString().split("_")[0])
-								.compareTo(new Integer(p1.getFileName().toString().split("_")[0]));
-					}).findFirst();
+					Optional<Path> recent = Files.list(svnDirPath)
+							.filter(f -> f.getFileName().toString().matches("\\d+_" + fileNameRef.get()))
+							.sorted((p1, p2) -> new Integer(p2.getFileName().toString().split("_")[0])
+									.compareTo(new Integer(p1.getFileName().toString().split("_")[0])))
+							.findFirst();
 
 					Path tobePath = commit(recent.get(), tempPath);
 

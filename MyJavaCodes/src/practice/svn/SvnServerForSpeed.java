@@ -61,12 +61,11 @@ public class SvnServerForSpeed {
 						long fileLen = dis.readLong();
 
 						Path repoPath = Paths.get(".\\resource\\practice\\svn\\server\\root\\d1");
-						Optional<Path> recent = Files.list(repoPath).filter((p) -> {
-							return p.getFileName().toString().matches("\\d_" + fileName);
-						}).sorted((a, b) -> {
-							return new Integer(b.getFileName().toString().split("_")[0])
-									.compareTo(Integer.parseInt(a.getFileName().toString().split("_")[0]));
-						}).findFirst();
+						Optional<Path> recent = Files.list(repoPath)
+								.filter(p -> p.getFileName().toString().matches("\\d_" + fileName))
+								.sorted((a, b) -> new Integer(b.getFileName().toString().split("_")[0])
+										.compareTo(Integer.parseInt(a.getFileName().toString().split("_")[0])))
+								.findFirst();
 						Path asisPath = recent.isPresent() ? recent.get() : null;
 
 						Path tempPath = asisPath.resolveSibling(fileName + "_temp");
@@ -130,7 +129,7 @@ public class SvnServerForSpeed {
 
 			AtomicInteger sameCnt = new AtomicInteger(0);
 			AtomicInteger inputIndex = new AtomicInteger(0);
-			asisLine.chars().forEach((c) -> {
+			asisLine.chars().forEach(c -> {
 				int tmp = inputLine.indexOf(c, inputIndex.get());
 				if (tmp >= 0) {
 					sameCnt.incrementAndGet();

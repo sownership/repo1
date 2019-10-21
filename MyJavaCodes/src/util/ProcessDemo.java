@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.lang.management.ManagementFactory;
+import java.lang.management.RuntimeMXBean;
 
 public class ProcessDemo {
 	public static void main(String[] args) throws IOException, InterruptedException {
@@ -67,5 +68,22 @@ public class ProcessDemo {
 			}
 		}
 		p.waitFor();
+	}
+
+	public static long getPid() {
+		return Long.valueOf(ManagementFactory.getRuntimeMXBean().getName().split("@")[0]);
+	}
+
+	public static boolean isRunning(String pid) throws IOException {
+		String[] cmd = { "cmd", "/c", "tasklist /fi \"pid eq " + pid + "\"" };
+		Process process = Runtime.getRuntime().exec(cmd);
+		try (BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+			String line;
+			while ((line = br.readLine()) != null) {
+				if (line.contains(pid))
+					return true;
+			}
+		}
+		return false;
 	}
 }

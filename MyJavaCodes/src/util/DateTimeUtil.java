@@ -2,10 +2,12 @@ package util;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.Period;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
-import java.util.concurrent.TimeUnit;
 
 public class DateTimeUtil {
 
@@ -15,27 +17,33 @@ public class DateTimeUtil {
 //		System.out.println(subtractToSeconds("091100", "141010"));
 //		System.out.println(subtractTodHms("20180530090500", "20180531080601"));
 
-		System.out.println(addTime("10:10:10", "16:05:03"));
+		System.out.println(subTime("10:10:10", "22:23:24"));
 	}
 
 	/**
 	 * addTime("10:10:10", "10:05:03") = 20:15:13
 	 */
 	private static String addTime(String time1, String time2) throws ParseException {
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+		return LocalTime.parse(time1, formatter).plusSeconds(LocalTime.parse(time2, formatter).toSecondOfDay())
+				.format(formatter);
 
-		SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
-		long after = sdf.parse(time2).getTime() - sdf.parse("00:00:00").getTime();
-		return sdf.format(new Date(sdf.parse(time1).getTime() + after));
+//		SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
+//		long after = sdf.parse(time2).getTime() - sdf.parse("00:00:00").getTime();
+//		return sdf.format(new Date(sdf.parse(time1).getTime() + after));
 	}
 
 	/**
 	 * subTime("10:10:10", "10:05:03") = 00:05:07
 	 */
 	private static String subTime(String time1, String time2) throws ParseException {
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+		return LocalTime.parse(time2, formatter).minusSeconds(LocalTime.parse(time1, formatter).toSecondOfDay())
+				.format(formatter);
 
-		SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
-		long before = sdf.parse(time2).getTime() - sdf.parse("00:00:00").getTime();
-		return sdf.format(new Date(sdf.parse(time1).getTime() - before));
+//		SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss");
+//		long before = sdf.parse(time2).getTime() - sdf.parse("00:00:00").getTime();
+//		return sdf.format(new Date(sdf.parse(time1).getTime() - before));
 	}
 
 	/**

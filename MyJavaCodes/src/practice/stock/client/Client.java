@@ -9,9 +9,8 @@ import java.nio.ByteBuffer;
 import practice.stock.biz.AbstractBiz;
 import practice.stock.codec.Decoder;
 import practice.stock.feature.BizFromClientFactory;
+import practice.stock.feature.pingpong.PingResMsgToClient;
 import practice.stock.msg.AbstractMsg;
-import practice.stock.msg.fromclient.req.ReqMsgFromClient;
-import practice.stock.msg.fromclient.res.ResMsgFromClient;
 
 public class Client {
 
@@ -22,7 +21,7 @@ public class Client {
 		this.socket = socket;
 	}
 
-	public synchronized boolean putRecvBuffer(byte[] b, int len) {
+	private synchronized boolean putRecvBuffer(byte[] b, int len) {
 		recvBuffer.put(b, 0, len);
 		return true;
 	}
@@ -34,6 +33,7 @@ public class Client {
 	public void start() {
 		try (BufferedInputStream bis = new BufferedInputStream(socket.getInputStream());
 				BufferedOutputStream bos = new BufferedOutputStream(socket.getOutputStream())) {
+			System.out.println("client started:"+socket);
 			byte[] b = new byte[1024 * 8];
 			int len = 0;
 			while ((len = bis.read(b)) != -1) {
@@ -41,18 +41,17 @@ public class Client {
 					continue;
 				AbstractMsg msg = null;
 				while ((msg = Decoder.decode(this)) != null) {
-					AbstractBiz biz = null;
-					if (msg instanceof ResMsgFromClient) {
-						biz = BizFromClientFactory.get(msg);
-					} else if (msg instanceof ReqMsgFromClient) {
-						biz = BizFromClientFactory.get(msg);
-					}
+					AbstractBiz biz = BizFromClientFactory.get(msg);
 					if (biz != null)
-						biz.run();
+						biz.run(msg);
 				}
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+	}
+
+	public void send(PingResMsgToClient pingResMsgToClient) {
+		
 	}
 }

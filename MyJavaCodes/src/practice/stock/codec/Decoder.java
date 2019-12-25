@@ -3,6 +3,8 @@ package practice.stock.codec;
 import java.nio.ByteBuffer;
 
 import practice.stock.client.Client;
+import practice.stock.feature.ReqMsgFromClientFactory;
+import practice.stock.feature.ResMsgFromClientFactory;
 import practice.stock.msg.AbstractMsg;
 
 public class Decoder {
@@ -19,7 +21,7 @@ public class Decoder {
 		bb.flip();
 		boolean isStarted = false;
 		while(bb.hasRemaining()) {
-			if(bb.get()==0xff) {
+			if(bb.get()==(byte)0xff) {
 				isStarted = true;
 				break;
 			}
@@ -43,9 +45,9 @@ public class Decoder {
 		bb.get(b);
 		AbstractMsg msg = null;
 		if(cmd==0xff) {
-			msg = ResMsgFromClientFactory.get(cmd, b);
+			msg = ResMsgFromClientFactory.get(client, cmd, b);
 		} else {
-			msg = ReqMsgFromClientFactory.get(cmd, b);
+			msg = ReqMsgFromClientFactory.get(client, cmd, b);
 		}
 		
 		bb.compact();

@@ -8,12 +8,19 @@ public abstract class AbstractMsg {
 	
 	private byte cmd;
 	
-	public AbstractMsg(Client client, byte cmd) {
+	private byte[] body;
+	
+	public AbstractMsg(Client client, byte cmd, byte[] body) {
 		this.client = client;
 		this.cmd = cmd;
+		this.body = body;
 	}
 	
 	public byte getCmd() {
 		return this.cmd;
+	}
+	
+	public Client getClient() {
+		return this.client;
 	}
 }

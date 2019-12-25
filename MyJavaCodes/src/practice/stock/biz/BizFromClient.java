@@ -1,6 +1,5 @@
-package practice.stock.biz.fromclient;
+package practice.stock.biz;
 
-import practice.stock.biz.AbstractBiz;
 import practice.stock.client.Client;
 
 public abstract class BizFromClient extends AbstractBiz {

@@ -17,40 +17,43 @@ public class Decoder {
 	 * @return
 	 */
 	public static AbstractMsg decode(Client client) {
+		AbstractMsg msg = null;
 		ByteBuffer bb = client.getRecvBuffer();
 		bb.flip();
-		boolean isStarted = false;
-		while(bb.hasRemaining()) {
-			if(bb.get()==(byte)0xff) {
-				isStarted = true;
-				break;
+		try {
+			boolean isStarted = false;
+			while(bb.hasRemaining()) {
+				bb.mark();
+				if(bb.get()==(byte)0xff) {
+					isStarted = true;
+					break;
+				}
 			}
+			if(!isStarted) return null;
+			if(!bb.hasRemaining()) {
+				bb.reset();
+				return null;
+			}
+			byte cmd = bb.get();
+			if(bb.remaining()<4) {
+				bb.reset();
+				return null;
+			}
+			int bodyLen = bb.getInt();
+			if(bb.remaining()<bodyLen) {
+				bb.reset();
+				return null;
+			}
+			byte[] b = new byte[bodyLen];
+			bb.get(b);
+			if(cmd==0xff) {
+				msg = ResMsgFromClientFactory.get(client, cmd, b);
+			} else {
+				msg = ReqMsgFromClientFactory.get(client, cmd, b);
+			}
+		} finally {
+			bb.compact();
 		}
-		if(!isStarted) return null;
-		if(!bb.hasRemaining()) {
-			bb.position(bb.position()-1);
-			return null;
-		}
-		byte cmd = bb.get();
-		if(bb.remaining()<4) {
-			bb.position(bb.position()-2);
-			return null;
-		}
-		int bodyLen = bb.getInt();
-		if(bb.remaining()<bodyLen) {
-			bb.position(bb.position()-6);
-			return null;
-		}
-		byte[] b = new byte[bodyLen];
-		bb.get(b);
-		AbstractMsg msg = null;
-		if(cmd==0xff) {
-			msg = ResMsgFromClientFactory.get(client, cmd, b);
-		} else {
-			msg = ReqMsgFromClientFactory.get(client, cmd, b);
-		}
-		
-		bb.compact();
 		
 		return msg;
 	}

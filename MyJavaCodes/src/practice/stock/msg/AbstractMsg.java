@@ -19,8 +19,13 @@ public abstract class AbstractMsg {
 	public byte getCmd() {
 		return this.cmd;
 	}
+
+	public byte[] getBody() {
+		return this.body;
+	}
 	
 	public Client getClient() {
 		return this.client;
 	}
+	
 }

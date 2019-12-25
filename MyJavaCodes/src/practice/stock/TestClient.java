@@ -33,7 +33,7 @@ public class TestClient {
 				bos.flush();
 				
 				int len = bis.read(recvBuffer);
-				System.out.println(Arrays.copyOfRange(recvBuffer, 6, len-2));
+				System.out.println(new String(Arrays.copyOfRange(recvBuffer, 7, len)));
 				
 				Thread.sleep(1000);
 			}

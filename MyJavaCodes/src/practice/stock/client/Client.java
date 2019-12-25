@@ -3,6 +3,7 @@ package practice.stock.client;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
+import java.lang.ref.WeakReference;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 
@@ -15,6 +16,7 @@ import practice.stock.msg.AbstractMsg;
 public class Client {
 
 	private Socket socket;
+	private WeakReference<BufferedOutputStream> bosWr;
 	private ByteBuffer recvBuffer = ByteBuffer.allocate(1024 * 1024);
 
 	public Client(Socket socket) {
@@ -33,6 +35,7 @@ public class Client {
 	public void start() {
 		try (BufferedInputStream bis = new BufferedInputStream(socket.getInputStream());
 				BufferedOutputStream bos = new BufferedOutputStream(socket.getOutputStream())) {
+			bosWr=new WeakReference<>(bos);
 			System.out.println("client started:"+socket);
 			byte[] b = new byte[1024 * 8];
 			int len = 0;
@@ -51,7 +54,11 @@ public class Client {
 		}
 	}
 
-	public void send(PingResMsgToClient pingResMsgToClient) {
-		
+	public void send(byte[] msg) throws IOException {
+		BufferedOutputStream bos = bosWr.get();
+		if(bos!=null) {
+			bos.write(msg);
+			bos.flush();
+		}
 	}
 }

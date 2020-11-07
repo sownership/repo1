@@ -2,15 +2,30 @@ package util;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.time.Duration;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.Period;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
 
 public class DateTimeUtil {
 
+	private static class InDay {
+		
+		public static void main(String[] args) {
+			
+			String t1="13:33:40";
+			String t2="09:40:41";
+			//t1-t2
+			int t1s=Integer.valueOf(t1.substring(0,2))*60*60 + Integer.valueOf(t1.substring(3,5))*60 + Integer.valueOf(t1.substring(6));
+			int t2s=Integer.valueOf(t2.substring(0,2))*60*60 + Integer.valueOf(t2.substring(3,5))*60 + Integer.valueOf(t2.substring(6));
+			int d=t1s-t2s;
+			int dh=d/60/60;
+			int dm=d%3600/60;
+			int ds=d%60;
+			String dStr=String.format("%02d:%02d:%02d", dh,dm,ds);
+			System.out.println(dStr);
+		}
+	}
+	
 	public static void main(String[] args) throws ParseException {
 
 //		System.out.println(subtractToHms("091100", "141010"));

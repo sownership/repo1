@@ -13,7 +13,7 @@ public class CompletableFutureUtil {
 
 	public static void main(String[] args) throws InterruptedException {
 
-		scenario2();
+		scenario3();
 
 	}
 
@@ -56,5 +56,55 @@ public class CompletableFutureUtil {
 					System.out.println(results.get(3));
 					es.shutdown();
 				}, es);
+	}
+
+	private static void scenario3() {
+		CompletableFuture<String> cf1=CompletableFuture.supplyAsync(() -> {
+			System.out.println(Thread.currentThread()+",cf1");
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			return "haha1";
+		});
+//		cf1.thenAccept((s)->{
+//			try {
+//				Thread.sleep(5000);
+//			} catch (InterruptedException e) {
+//				e.printStackTrace();
+//			}
+//			System.out.println(Thread.currentThread()+",1,"+s);
+//		});
+//		cf1.thenAccept((s)->{
+//			try {
+//				Thread.sleep(2000);
+//			} catch (InterruptedException e) {
+//				e.printStackTrace();
+//			}
+//			System.out.println(Thread.currentThread()+",2,"+s);
+//		});
+		cf1.thenAcceptAsync((s)->{
+			try {
+				Thread.sleep(5000);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			System.out.println(Thread.currentThread()+",1,"+s);
+		});
+		cf1.thenAcceptAsync((s)->{
+			try {
+				Thread.sleep(2000);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			System.out.println(Thread.currentThread()+",2,"+s);
+		});
+		
+		try {
+			Thread.sleep(100000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 	}
 }

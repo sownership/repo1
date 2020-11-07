@@ -10,7 +10,7 @@ public class Nqueen {
 
 	public static void main(String[] args) {
 
-		getCase(13);
+		getCase(9);
 		System.out.println(answer);
 	}
 

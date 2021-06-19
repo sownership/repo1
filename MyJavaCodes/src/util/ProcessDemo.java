@@ -51,6 +51,7 @@ public class ProcessDemo {
 
 	public void runLine(String[] command) throws IOException, InterruptedException {
 		ProcessBuilder builder = new ProcessBuilder(command);
+		builder.redirectErrorStream(true);
 		Process p = builder.start();
 
 		try (BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));

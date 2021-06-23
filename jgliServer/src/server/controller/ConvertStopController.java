@@ -1,6 +1,6 @@
 package server.controller;
 
-import java.nio.ByteBuffer;
+import java.util.Map;
 
 import server.client.AbsClient;
 import server.util.WhiteBoard;
@@ -8,7 +8,7 @@ import server.util.WhiteBoard;
 public class ConvertStopController implements IController {
 
 	@Override
-	public void start(AbsClient client, ByteBuffer req) {
+	public void start(AbsClient client, Map<String, Object> msg) {
 		WhiteBoard.notify("convert"+client+"/stop", null);
 	}
 

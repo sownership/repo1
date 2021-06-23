@@ -13,6 +13,8 @@ import java.util.List;
 public class SerializableTest {
 
 	private static class C1 implements Serializable {
+
+		private static final long serialVersionUID = -8456503918427869884L;
 		List<String> m1 = new ArrayList<>();
 
 		public void init() {
